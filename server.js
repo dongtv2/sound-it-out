@@ -134,6 +134,45 @@ if (userCount === 0) {
   );
 }
 
+// Ensure specific requested accounts exist (phuctri@metta.family & maianh@metta.family)
+const checkUserExist = db.prepare('SELECT COUNT(*) as count FROM users WHERE email = ?');
+
+if (checkUserExist.get('phuctri@metta.family').count === 0) {
+  db.prepare(`
+    INSERT INTO users (uid, displayName, email, password, role, isSuperuser, isStaff, userPermissions, avatarUrl, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'stu-102',
+    'Bé Phúc Trí',
+    'phuctri@metta.family',
+    'Behappy@123',
+    'student',
+    0,
+    0,
+    JSON.stringify(['content.view_list']),
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=phuctri',
+    Date.now()
+  );
+}
+
+if (checkUserExist.get('maianh@metta.family').count === 0) {
+  db.prepare(`
+    INSERT INTO users (uid, displayName, email, password, role, isSuperuser, isStaff, userPermissions, avatarUrl, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'tch-203',
+    'Cô Mai Anh',
+    'maianh@metta.family',
+    'Behappy@123',
+    'teacher',
+    0,
+    1,
+    JSON.stringify(['content.add_list', 'content.change_list', 'reports.view_studentreport']),
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=maianh',
+    Date.now()
+  );
+}
+
 // Seed Practice Lists if empty
 const listCount = db.prepare('SELECT COUNT(*) as count FROM practice_lists').get().count;
 if (listCount === 0) {

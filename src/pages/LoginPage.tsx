@@ -32,10 +32,10 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickFill = (emailVal: string) => {
+  const handleQuickFill = (emailVal: string, pwdVal: string = 'Behappy@123') => {
     soundEffects.playPop();
     setEmail(emailVal);
-    setPassword('Dong1984@');
+    setPassword(pwdVal);
   };
 
   return (
@@ -118,7 +118,8 @@ export const LoginPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => handleQuickFill('admin@metta.family')}
+              type="button"
+              onClick={() => handleQuickFill('admin@metta.family', 'Dong1984@')}
               className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer"
             >
               <div className="font-black text-emerald-600">Admin</div>
@@ -126,10 +127,29 @@ export const LoginPage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => handleQuickFill('student@metta.family')}
+              type="button"
+              onClick={() => handleQuickFill('maianh@metta.family', 'Behappy@123')}
+              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-purple-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 transition-all cursor-pointer"
+            >
+              <div className="font-black text-purple-600">Cô Mai Anh (Teacher)</div>
+              <div className="text-[10px] text-slate-400 truncate">maianh@metta.family</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill('phuctri@metta.family', 'Behappy@123')}
               className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/30 transition-all cursor-pointer"
             >
-              <div className="font-black text-cyan-600">Bé Mai (Student)</div>
+              <div className="font-black text-cyan-600">Bé Phúc Trí (Student)</div>
+              <div className="text-[10px] text-slate-400 truncate">phuctri@metta.family</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill('student@metta.family', 'Dong1984@')}
+              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-teal-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-teal-50/50 dark:hover:bg-teal-950/30 transition-all cursor-pointer"
+            >
+              <div className="font-black text-teal-600">Bé Mai (Student)</div>
               <div className="text-[10px] text-slate-400 truncate">student@metta.family</div>
             </button>
           </div>

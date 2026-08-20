@@ -14,8 +14,8 @@ import {
   XCircle, 
   BookOpen,
   Sparkles,
-  Layers,
-  UserCheck
+  UserCheck,
+  Clock
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
@@ -96,55 +96,27 @@ export const DictationPractice: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* 3-COLUMN BALANCED LAYOUT: ASIDE LEFT (3) | MAIN WORKSPACE (6) | ASIDE RIGHT (3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* ASIDE LEFT: Danh sách bài học được assign */}
-        <aside className="lg:col-span-4 space-y-4">
+        <aside className="lg:col-span-3 space-y-4">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <ListMusic className="w-4 h-4 text-emerald-500" />
-                <span>Danh sách bài học được assign</span>
+                <span>Bài học được assign</span>
               </h2>
               <p className="text-[11px] font-bold text-slate-400 mt-0.5">
-                Chọn bài luyện tập dành riêng cho bạn
+                Danh sách bài tập dành cho bạn
               </p>
             </div>
 
-            {/* SRS Pool Card Option */}
-            <div
-              onClick={() => {
-                soundEffects.playPop();
-                setActiveListId('srs-review-pool');
-                setCurrentIndex(0);
-              }}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                isSrsMode
-                  ? 'border-amber-500 bg-amber-50/40 dark:bg-amber-950/40 shadow-md'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-400 bg-slate-50/50 dark:bg-slate-950/50'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900 dark:text-white">⭐ Kho Từ Cần Ôn Tập SRS</h3>
-                    <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                      Spaced Repetition SM-2
-                    </div>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
-                  {reviewItems.length} từ
-                </span>
-              </div>
-            </div>
-
             {/* List Catalog */}
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
               {lists.map(l => {
-                const isSelected = activeListId === l.id || (!isSrsMode && activeList?.id === l.id);
+                const isSelected = !isSrsMode && activeList?.id === l.id;
                 const isAssignedToMe = l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
 
                 return (
@@ -155,28 +127,26 @@ export const DictationPractice: React.FC = () => {
                       setActiveListId(l.id);
                       setCurrentIndex(0);
                     }}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-md'
+                        ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-md ring-1 ring-emerald-500/30'
                         : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-snug">
-                          {l.name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                            {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items.length} phần)
+                    <div className="space-y-1.5">
+                      <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-2">
+                        {l.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items.length} phần)
+                        </span>
+                        {isAssignedToMe && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            <span>Giao cho bạn</span>
                           </span>
-                          {isAssignedToMe && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
-                              <UserCheck className="w-3 h-3" />
-                              <span>Giao cho bạn</span>
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -186,18 +156,18 @@ export const DictationPractice: React.FC = () => {
           </div>
         </aside>
 
-        {/* MAIN DICTATION PRACTICE WORKSPACE */}
-        <div className="lg:col-span-8 space-y-6">
+        {/* CENTER MAIN WORKSPACE */}
+        <main className="lg:col-span-6 space-y-6">
           {/* Top Bar Stats */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-emerald-500" />
-              <span className="font-black text-sm text-slate-900 dark:text-white">
-                {isSrsMode ? 'Ôn tập Kho SRS' : activeList?.name}
+            <div className="flex items-center gap-2 min-w-0">
+              <BookOpen className="w-5 h-5 text-emerald-500 shrink-0" />
+              <span className="font-black text-sm text-slate-900 dark:text-white truncate">
+                {isSrsMode ? '⭐ Ôn tập Kho SRS' : activeList?.name}
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 text-xs font-black">
                 <Flame className="w-4 h-4 fill-amber-400" />
                 <span>Chuỗi: {streak}</span>
@@ -216,7 +186,7 @@ export const DictationPractice: React.FC = () => {
               <BrainCircuit className="w-12 h-12 text-slate-400 mx-auto" />
               <h3 className="text-lg font-black text-slate-900 dark:text-white">Chưa có bài tập trong danh sách này</h3>
               <p className="text-xs font-bold text-slate-500 max-w-sm mx-auto">
-                Hãy chọn bài tập khác ở thanh bên trái hoặc tạo bài học mới!
+                Hãy chọn bài tập khác ở thanh bên trái hoặc chọn Kho SRS bên phải!
               </p>
             </div>
           ) : (
@@ -260,7 +230,7 @@ export const DictationPractice: React.FC = () => {
                   </select>
                 </div>
 
-                {/* REQUIREMENT 3: VIETNAMESE MEANING TEXTBOX */}
+                {/* VIETNAMESE MEANING TEXTBOX */}
                 <div className="w-full max-w-md mx-auto p-3.5 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl text-center shadow-xs">
                   <div className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider mb-0.5">
                     Nghĩa Tiếng Việt
@@ -358,7 +328,79 @@ export const DictationPractice: React.FC = () => {
               </form>
             </div>
           )}
-        </div>
+        </main>
+
+        {/* ASIDE RIGHT: ⭐ Kho Từ Cần Ôn Tập SRS */}
+        <aside className="lg:col-span-3 space-y-4">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
+                <span>Kho Từ Cần Ôn Tập SRS</span>
+              </h2>
+              <p className="text-[11px] font-bold text-slate-400 mt-0.5">
+                Thuật toán Spaced Repetition SM-2
+              </p>
+            </div>
+
+            {/* SRS Main Card Button */}
+            <div
+              onClick={() => {
+                soundEffects.playPop();
+                setActiveListId('srs-review-pool');
+                setCurrentIndex(0);
+              }}
+              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                isSrsMode
+                  ? 'border-amber-500 bg-amber-50/40 dark:bg-amber-950/40 shadow-md ring-1 ring-amber-500/30'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-400 bg-slate-50/50 dark:bg-slate-950/50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
+                  <div>
+                    <h3 className="font-black text-xs text-slate-900 dark:text-white">⭐ Ôn Tập Kho SRS</h3>
+                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Tất cả từ khó đến hạn</div>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
+                  {reviewItems.length} từ
+                </span>
+              </div>
+            </div>
+
+            {/* List of SRS Review Items */}
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+              {reviewItems.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
+                  Kho SRS đang trống. Chấm điểm bài tập để tự động lưu từ khó!
+                </div>
+              ) : (
+                reviewItems.map((item, i) => (
+                  <div
+                    key={item.id || i}
+                    className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/60 space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white font-mono">{item.text}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Lặp: {item.repetitions || 0}</span>
+                      </span>
+                    </div>
+                    {item.vi && (
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                        {item.vi}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
+
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { soundEffects } from '@/services/sound-effects';
-import { Volume2, Lock, Mail, Sparkles, ShieldCheck, Check } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('admin@metta.family');
-  const [password, setPassword] = useState('Dong1984@');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -14,7 +15,7 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!email.trim() || !password) {
-      setError('Vui lòng nhập Email và Mật khẩu!');
+      setError('Vui lòng nhập đầy đủ Email và Mật khẩu!');
       return;
     }
 
@@ -25,17 +26,11 @@ export const LoginPage: React.FC = () => {
       soundEffects.playSuccess();
     } catch (err: unknown) {
       soundEffects.playError();
-      const message = err instanceof Error ? err.message : 'Đăng nhập thất bại!';
+      const message = err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!';
       setError(message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = (emailVal: string, pwdVal: string = 'Behappy@123') => {
-    soundEffects.playPop();
-    setEmail(emailVal);
-    setPassword(pwdVal);
   };
 
   return (
@@ -48,18 +43,23 @@ export const LoginPage: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/90 to-slate-900/80" />
 
       {/* Main Login Box */}
-      <div className="relative z-10 w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl space-y-8 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
         {/* Brand Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-xl shadow-emerald-500/30 p-2">
-            <img src="/logo-icon.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} />
+            <img 
+              src="/logo-icon.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain" 
+              onError={(e) => { (e.target as HTMLImageElement).src = '/favicon.svg'; }} 
+            />
           </div>
           <div>
             <h1 className="text-2xl font-black bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 bg-clip-text text-transparent">
               Sound It Out
             </h1>
-            <div className="text-xs font-bold text-slate-500 font-mono tracking-tight mt-1">
-              sound-it-out.metta.family
+            <div className="text-xs font-bold text-slate-400 dark:text-slate-500 font-mono tracking-tight mt-1">
+              May all beings be happy
             </div>
           </div>
         </div>
@@ -70,35 +70,46 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        {/* Clean & Secure Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
           <div>
-            <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Email tài khoản</label>
+            <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+              Email tài khoản
+            </label>
             <div className="relative">
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="admin@metta.family"
-                className="w-full px-4 py-3 pl-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="nhap-email@metta.family"
+                className="w-full px-4 py-3.5 pl-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
               />
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-4" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Mật khẩu</label>
+            <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">
+              Mật khẩu
+            </label>
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 pl-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3.5 pl-10 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
               />
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-4" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-3.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -111,53 +122,10 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Quick Family Account Selectors */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
-          <div className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-wider">
-            Tài khoản gia đình điền sẵn
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('admin@metta.family', 'Dong1984@')}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer"
-            >
-              <div className="font-black text-emerald-600">Admin</div>
-              <div className="text-[10px] text-slate-400 truncate">admin@metta.family</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('maianh@metta.family', 'Behappy@123')}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-purple-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 transition-all cursor-pointer"
-            >
-              <div className="font-black text-purple-600">Cô Mai Anh (Teacher)</div>
-              <div className="text-[10px] text-slate-400 truncate">maianh@metta.family</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('phuctri@metta.family', 'Behappy@123')}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/30 transition-all cursor-pointer"
-            >
-              <div className="font-black text-cyan-600">Bé Phúc Trí (Student)</div>
-              <div className="text-[10px] text-slate-400 truncate">phuctri@metta.family</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('student@metta.family', 'Dong1984@')}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-teal-500 text-left text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-teal-50/50 dark:hover:bg-teal-950/30 transition-all cursor-pointer"
-            >
-              <div className="font-black text-teal-600">Bé Mai (Student)</div>
-              <div className="text-[10px] text-slate-400 truncate">student@metta.family</div>
-            </button>
-          </div>
-        </div>
-
         {/* Security Disclaimer */}
-        <div className="text-center text-[11px] text-slate-400 font-medium">
-          🔒 Ứng dụng gia đình riêng tư. Đăng ký tự do bị khóa. Admin cấp tài khoản trực tiếp.
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400 font-medium">
+          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          <span>Ứng dụng gia đình riêng tư. Bảo mật tuyệt đối.</span>
         </div>
       </div>
     </div>

@@ -38,7 +38,7 @@ export const LoginPage: React.FC = () => {
       {/* Background Image with Dark Backdrop Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 blur-xs scale-105"
-        style={{ backgroundImage: `url('/sound-it-out-portal-bg.jpg')` }}
+        style={{ backgroundImage: `url('/metta-portal-bg.jpg')` }}
       />
       <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/90 to-slate-900/80" />
 

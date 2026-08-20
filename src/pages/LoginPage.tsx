@@ -35,12 +35,12 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 bg-slate-950 overflow-hidden font-sans">
-      {/* Background Image with Dark Backdrop Overlay */}
+      {/* Background Image with Crisp Backdrop Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 blur-xs scale-105"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80 scale-105"
         style={{ backgroundImage: `url('/metta-portal-bg.jpg')` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/90 to-slate-900/80" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/80 via-slate-950/60 to-slate-900/50" />
 
       {/* Main Login Box */}
       <div className="relative z-10 w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">

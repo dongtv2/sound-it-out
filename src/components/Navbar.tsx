@@ -73,7 +73,7 @@ export const Navbar: React.FC = () => {
               <span>Sound It Out</span>
             </div>
             <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-tight mt-0.5">
-              sound-it-out.metta.family
+              May all beings be happy
             </div>
           </div>
         </div>

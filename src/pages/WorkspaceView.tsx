@@ -25,7 +25,7 @@ export const WorkspaceView: React.FC = () => {
 
       {/* 3. ASSIGNED HOMEWORK TAB (Student View) */}
       {activeTab === 'assigned' && (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 rounded-2xl">
@@ -73,7 +73,7 @@ export const WorkspaceView: React.FC = () => {
 
       {/* 4. REPORTS TAB (Parent / Teacher / Admin View) */}
       {activeTab === 'reports' && (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 rounded-2xl">

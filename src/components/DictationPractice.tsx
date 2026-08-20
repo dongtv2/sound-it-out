@@ -96,7 +96,7 @@ export const DictationPractice: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6">
       {/* 3-COLUMN BALANCED LAYOUT: ASIDE LEFT (3) | MAIN WORKSPACE (6) | ASIDE RIGHT (3) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         

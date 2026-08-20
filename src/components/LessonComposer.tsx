@@ -132,7 +132,7 @@ export const LessonComposer: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-8">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="flex items-center gap-4">

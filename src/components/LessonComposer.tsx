@@ -631,12 +631,16 @@ export const LessonComposer: React.FC = () => {
                                     className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-800 shrink-0" 
                                     onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                   />
-                                ) : null}
+                                ) : (
+                                  <div className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                                    <ImageIcon className="w-3.5 h-3.5" />
+                                  </div>
+                                )}
                                 <input
                                   type="text"
                                   value={item.imageUrl || ''}
                                   onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)}
-                                  placeholder="URL ảnh (https://...)"
+                                  placeholder="URL ảnh (hoặc để trống)"
                                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 />
                               </div>

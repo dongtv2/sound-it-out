@@ -361,6 +361,160 @@ export const AdminPortal: React.FC = () => {
                 </button>
               </div>
             </div>
+
+          </div>
+
+          {/* Integrated Full TTS Configuration Card in Tab 2 */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-emerald-500" />
+                  <span>🔊 Cấu Hình Giọng Đọc TTS Native & OpenAI Audio API</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Lựa chọn công nghệ phát âm, mô hình giọng AI và tốc độ đọc cho học sinh</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  ttsService.speak(testText, ttsSettings);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-md hover:bg-emerald-500 flex items-center gap-2 cursor-pointer"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Phát Âm Thử</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Engine Selection */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-2">
+                <label className="text-xs font-black text-slate-800 dark:text-slate-200 block uppercase">Công Nghệ Engine</label>
+                <select
+                  value={ttsSettings.engine}
+                  onChange={e => updateTtsSettings({ engine: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                >
+                  <option value="browser_native">🌐 Web Speech API (Google / Apple / Microsoft HD Voices)</option>
+                  <option value="openai_tts">🤖 OpenAI Audio Speech API (Studio AI Voices)</option>
+                  <option value="google_tts_cdn">⚡ Google Audio Stream CDN Fallback</option>
+                </select>
+              </div>
+
+              {/* Accent Selection */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-2">
+                <label className="text-xs font-black text-slate-800 dark:text-slate-200 block uppercase">Chất Giọng Mặc Định</label>
+                <select
+                  value={ttsSettings.accent}
+                  onChange={e => updateTtsSettings({ accent: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                >
+                  <option value="en-US">🇺🇸 Tiếng Anh - Mỹ (Native US)</option>
+                  <option value="en-GB">🇬🇧 Tiếng Anh - Anh (Native UK)</option>
+                  <option value="en-AU">🇦🇺 Tiếng Anh - Úc (Native AU)</option>
+                </select>
+              </div>
+
+              {/* Voice Model Selection */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-2">
+                <label className="text-xs font-black text-slate-800 dark:text-slate-200 block uppercase">Mô Hình Giọng Đọc Cụ Thể</label>
+                <select
+                  value={ttsSettings.voiceName || 'auto'}
+                  onChange={e => updateTtsSettings({ voiceName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                >
+                  <option value="auto">✨ Tự Động Chọn Giọng Tốt Nhất (Google / Samantha)</option>
+                  {ttsService.getAllEnglishVoices().map((v, i) => (
+                    <option key={v.name + i} value={v.name}>{v.name} ({v.lang})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rate Slider */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase">Tốc Độ Đọc ({ttsSettings.rate}x)</label>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.5"
+                  step="0.05"
+                  value={ttsSettings.rate}
+                  onChange={e => updateTtsSettings({ rate: parseFloat(e.target.value) })}
+                  className="w-full accent-emerald-500 cursor-pointer"
+                />
+              </div>
+
+              {/* OpenAI Config */}
+              {ttsSettings.engine === 'openai_tts' && (
+                <div className="p-4 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/50 dark:bg-purple-950/30 space-y-3 md:col-span-2">
+                  <h4 className="text-xs font-black text-purple-900 dark:text-purple-300 uppercase">Chi Tiết OpenAI Voices & API Key</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold block mb-1">OpenAI Voice</label>
+                      <select
+                        value={ttsSettings.openaiVoice || 'nova'}
+                        onChange={e => updateTtsSettings({ openaiVoice: e.target.value as any })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                      >
+                        <option value="nova">🌟 Nova (Ấm áp - Khuyên dùng)</option>
+                        <option value="shimmer">✨ Shimmer (Sôi nổi)</option>
+                        <option value="alloy">💎 Alloy (Trung tính)</option>
+                        <option value="echo">🗣️ Echo (Nam ấm)</option>
+                        <option value="onyx">🎙️ Onyx (Nam trầm)</option>
+                        <option value="fable">📖 Fable (Truyện kể)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold block mb-1">OpenAI Model</label>
+                      <select
+                        value={ttsSettings.openaiModel || 'tts-1'}
+                        onChange={e => updateTtsSettings({ openaiModel: e.target.value as any })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                      >
+                        <option value="tts-1">⚡ tts-1 (Standard)</option>
+                        <option value="tts-1-hd">🎧 tts-1-hd (Studio HD)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold block mb-1">OpenAI API Key</label>
+                      <input
+                        type="password"
+                        value={ttsSettings.openaiApiKey || ''}
+                        onChange={e => updateTtsSettings({ openaiApiKey: e.target.value })}
+                        placeholder="sk-proj-..."
+                        className="w-full px-3 py-1.5 rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={testText}
+                onChange={e => setTestText(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  ttsService.speak(testText, ttsSettings);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer hover:bg-emerald-500"
+              >
+                <Volume2 className="w-4 h-4" />
+                <span>Phát Âm</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

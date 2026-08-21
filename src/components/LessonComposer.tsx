@@ -623,13 +623,23 @@ export const LessonComposer: React.FC = () => {
                               />
                             </td>
                             <td className="py-2 px-2">
-                              <input
-                                type="text"
-                                value={item.imageUrl || ''}
-                                onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)}
-                                placeholder="URL ảnh (https://...)"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                              />
+                              <div className="flex items-center gap-1.5">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.text} 
+                                    className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-800 shrink-0" 
+                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                  />
+                                ) : null}
+                                <input
+                                  type="text"
+                                  value={item.imageUrl || ''}
+                                  onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)}
+                                  placeholder="URL ảnh (https://...)"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                              </div>
                             </td>
                             <td className="py-2 px-2 text-center">
                               <button

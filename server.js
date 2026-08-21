@@ -66,7 +66,36 @@ db.exec(`
     studentNote TEXT,
     timestamp INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT 'emerald',
+    icon TEXT DEFAULT 'tag',
+    description TEXT,
+    createdAt INTEGER NOT NULL
+  );
 `);
+
+// Seed default categories if empty
+try {
+  const catCount = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
+  if (catCount === 0) {
+    const seedCats = [
+      { id: 'cat-3000words', name: '3000 Words', slug: '3000words', color: 'emerald', icon: 'book', description: 'Bộ 3000 từ vựng Oxford thông dụng' },
+      { id: 'cat-music', name: 'Âm Nhạc', slug: 'music', color: 'purple', icon: 'music', description: 'Bài hát & Luyện nghe qua nhạc' },
+      { id: 'cat-phonics', name: 'Ngữ Âm Phonics', slug: 'phonics', color: 'amber', icon: 'volume-2', description: 'Quy tắc phát âm & Đánh vần Phonics' },
+      { id: 'cat-curriculum', name: 'Giáo Trình', slug: 'curriculum', color: 'blue', icon: 'graduation-cap', description: 'Bài học chương trình sách giáo khoa' },
+      { id: 'cat-general', name: 'Khác', slug: 'general', color: 'slate', icon: 'tag', description: 'Chủ đề chung' }
+    ];
+    const insertCat = db.prepare('INSERT INTO categories (id, name, slug, color, icon, description, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const now = Date.now();
+    seedCats.forEach(c => insertCat.run(c.id, c.name, c.slug, c.color, c.icon, c.description, now));
+  }
+} catch (e) {
+  console.warn('Categories init warning:', e);
+}
 
 // Clean up old dummy users if present
 db.prepare("DELETE FROM users WHERE email IN ('student@metta.family', 'teacher@metta.family', 'parent@metta.family')").run();
@@ -400,6 +429,48 @@ app.post('/api/lists', (req, res) => {
 
 app.delete('/api/lists/:id', (req, res) => {
   db.prepare('DELETE FROM practice_lists WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// Categories Management APIs (Dynamic Category Tags CRUD)
+app.get('/api/categories', (req, res) => {
+  const rows = db.prepare('SELECT * FROM categories ORDER BY createdAt ASC').all();
+  res.json(rows);
+});
+
+app.post('/api/categories', (req, res) => {
+  const { id, name, slug, color, icon, description } = req.body;
+  const catId = id || `cat-${Date.now()}`;
+  const cleanSlug = (slug || name || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  const now = Date.now();
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO categories (id, name, slug, color, icon, description, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        slug = excluded.slug,
+        color = excluded.color,
+        icon = excluded.icon,
+        description = excluded.description
+    `);
+
+    stmt.run(catId, name || 'Phân loại mới', cleanSlug || catId, color || 'emerald', icon || 'tag', description || '', now);
+    res.json({ success: true, id: catId, slug: cleanSlug });
+  } catch (err) {
+    res.status(400).json({ success: false, error: 'Tên phân loại hoặc mã slug đã tồn tại trong CSDL!' });
+  }
+});
+
+app.delete('/api/categories/:id', (req, res) => {
+  const catId = req.params.id;
+  const cat = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
+  if (cat) {
+    // Relink affected practice lists to 'general' category
+    db.prepare('UPDATE practice_lists SET tag = ? WHERE tag = ? OR tag = ?').run('general', cat.slug, cat.name);
+    db.prepare('DELETE FROM categories WHERE id = ?').run(catId);
+  }
   res.json({ success: true });
 });
 

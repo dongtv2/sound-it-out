@@ -16,10 +16,24 @@ export interface UserProfile {
   createdAt?: number;
 }
 
+export interface CategoryTag {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string;
+  icon?: string;
+  description?: string;
+  createdAt?: number;
+}
+
 export interface PracticeItem {
   id?: string;
   text: string;
   vi?: string;
+  ipa?: string;        // Phiên âm quốc tế (e.g. /stɑːr/)
+  imageUrl?: string;   // URL Hình ảnh minh họa
+  note?: string;       // Ghi chú/Hướng dẫn học tập
+  tags?: string[];     // Thẻ tag gắn cho từ/câu
   audioUrl?: string;
 }
 
@@ -27,7 +41,7 @@ export interface PracticeList {
   id: string;
   name: string;
   type: PracticeItemType;
-  tag?: string;      // Category tag e.g. '3000words', 'music', 'phonics', 'curriculum', 'general'
+  tag?: string;      // Category tag slug e.g. '3000words', 'music', 'phonics', 'curriculum', 'general'
   learner?: string; // Assigned student name (e.g. 'Bé Mai')
   by: string;      // Author
   items: PracticeItem[];

@@ -12,13 +12,26 @@ import {
   BookOpen, 
   Languages, 
   UserCheck, 
-  Layers, 
   CheckCircle2, 
-  Wand2 
+  Wand2,
+  Tag,
+  Image as ImageIcon,
+  FileText,
+  Volume2
 } from 'lucide-react';
 
 export const LessonComposer: React.FC = () => {
-  const { lists, addList, updateList, deleteList, translateTextMyMemory, splitTextToPhrases } = usePractice();
+  const { 
+    lists, 
+    categories, 
+    addList, 
+    updateList, 
+    deleteList, 
+    addCategory, 
+    deleteCategory, 
+    translateTextMyMemory, 
+    splitTextToPhrases 
+  } = usePractice();
   const { user, familyUsers } = useAuth();
 
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -31,12 +44,16 @@ export const LessonComposer: React.FC = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState('emerald');
+
   const startCreateNew = () => {
     soundEffects.playPop();
     setEditingListId(null);
     setListName('');
     setListType('words');
-    setListTag('curriculum');
+    setListTag(categories[0]?.slug || 'curriculum');
     setAssignLearner('Bé Phúc Trí');
     setRawText('');
     setStagedItems([]);
@@ -47,10 +64,28 @@ export const LessonComposer: React.FC = () => {
     setEditingListId(list.id);
     setListName(list.name);
     setListType(list.type);
-    setListTag(list.tag || 'curriculum');
+    setListTag(list.tag || categories[0]?.slug || 'curriculum');
     setAssignLearner(list.learner || '');
     setStagedItems(list.items || []);
     setRawText('');
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    soundEffects.playPop();
+
+    const slug = newCatName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    await addCategory({
+      name: newCatName.trim(),
+      slug,
+      color: newCatColor,
+      icon: 'tag'
+    });
+
+    setNewCatName('');
+    setIsCatModalOpen(false);
+    setListTag(slug);
   };
 
   const handleParseAndTranslate = async () => {
@@ -68,7 +103,10 @@ export const LessonComposer: React.FC = () => {
         parsed.push({
           id: `item-${Date.now()}-${i}`,
           text: p,
-          vi: vi || p
+          vi: vi || p,
+          ipa: '',
+          imageUrl: '',
+          note: ''
         });
       }
       setStagedItems(prev => [...prev, ...parsed]);
@@ -85,11 +123,18 @@ export const LessonComposer: React.FC = () => {
     soundEffects.playPop();
     setStagedItems(prev => [
       ...prev,
-      { id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, text: '', vi: '' }
+      { 
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, 
+        text: '', 
+        vi: '', 
+        ipa: '', 
+        imageUrl: '', 
+        note: '' 
+      }
     ]);
   };
 
-  const handleUpdateStagedItem = (index: number, key: 'text' | 'vi', val: string) => {
+  const handleUpdateStagedItem = (index: number, key: keyof PracticeItem, val: string) => {
     setStagedItems(prev => {
       const next = [...prev];
       next[index] = { ...next[index], [key]: val };
@@ -140,273 +185,152 @@ export const LessonComposer: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
-            <BookOpen className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Trình Soạn & Giao Bài Học</span>
-              <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
-            </h1>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
-              Soạn bài học mới, tự động tách văn bản & dịch nghĩa, giao bài trực tiếp cho học sinh
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={startCreateNew}
-          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tạo Bài Học Mới</span>
-        </button>
-      </div>
-
+    <div className="w-full px-4 lg:px-8 py-6 space-y-6">
       {successMessage && (
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border-2 border-emerald-500/50 rounded-2xl text-sm font-black text-emerald-600 dark:text-emerald-300 flex items-center gap-3 animate-in fade-in duration-200">
-          <CheckCircle2 className="w-6 h-6 shrink-0" />
-          <span>{successMessage}</span>
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 flex items-center gap-3">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+          <span className="font-bold text-sm">{successMessage}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: List Catalog & Edit Select */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
-            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-500" />
-              <span>Danh Mục Bài Học ({lists.length})</span>
-            </h2>
-
-            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-              {lists.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-xs font-bold">
-                  Chưa có bài học nào. Hãy khởi tạo bài đầu tiên!
-                </div>
-              ) : (
-                lists.map(list => (
-                  <div
-                    key={list.id}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      editingListId === list.id
-                        ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/30 shadow-md'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-snug">
-                          {list.name}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                            {list.type === 'words' ? 'Từ vựng' : 'Mẫu câu'}
-                          </span>
-                          {list.learner && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300">
-                              Giao: {list.learner}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => startEditList(list)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                          title="Sửa bài"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteList(list.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                          title="Xóa bài"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 text-[11px] font-bold text-slate-400 flex items-center justify-between">
-                      <span>{list.items.length} phần từ/câu</span>
-                      <span>Tác giả: {list.by}</span>
-                    </div>
-                  </div>
-                ))
-              )}
+      {isCatModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Tag className="w-4 h-4 text-emerald-500" />
+                <span>Quản Lý Phân Loại</span>
+              </h3>
+              <button onClick={() => setIsCatModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xs">✕</button>
             </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div className="text-[11px] font-bold text-slate-400">Danh mục trong SQLite:</div>
+              {categories.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-2 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">{c.name} ({c.slug})</span>
+                  {c.id !== 'cat-general' && (
+                    <button onClick={() => deleteCategory(c.id)} className="text-slate-400 hover:text-rose-500 p-1">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <form onSubmit={handleCreateCategory} className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <input
+                type="text"
+                required
+                value={newCatName}
+                onChange={e => setNewCatName(e.target.value)}
+                placeholder="Tên phân loại mới..."
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setIsCatModalOpen(false)} className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold">Hủy</button>
+                <button type="submit" className="px-4 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-black">Tạo</button>
+              </div>
+            </form>
           </div>
         </div>
+      )}
 
-        {/* Right Column: Editor Form */}
-        <div className="lg:col-span-8">
-          <form onSubmit={handleSaveList} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-emerald-500" />
-                <span>{editingListId ? 'Chỉnh Sửa Bài Học' : 'Soạn Bài Học Mới'}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <aside className="lg:col-span-4 space-y-4">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-500" />
+                <span>Kho Bài Học ({lists.length})</span>
               </h2>
-              {editingListId && (
-                <button
-                  type="button"
-                  onClick={startCreateNew}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  Hủy sửa
-                </button>
-              )}
+              <button onClick={startCreateNew} className="px-2.5 py-1 rounded-xl bg-emerald-500 text-white font-black text-[11px] flex items-center gap-1">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Mới</span>
+              </button>
             </div>
+            <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+              {lists.map(l => (
+                <div key={l.id} className={`p-3 rounded-2xl border ${editingListId === l.id ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate">{l.name}</h3>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => startEditList(l)} className="p-1.5 text-slate-400 hover:text-emerald-500"><Edit3 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteList(l.id)} className="p-1.5 text-slate-400 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
 
-            {/* Form Fields */}
+        <div className="lg:col-span-8 space-y-6">
+          <form onSubmit={handleSaveList} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Tên bài học</label>
-                <input
-                  type="text"
-                  required
-                  value={listName}
-                  onChange={e => setListName(e.target.value)}
-                  placeholder="Ví dụ: Unit 1: Hobbies"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <input type="text" required value={listName} onChange={e => setListName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500" />
               </div>
-
               <div>
                 <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Loại nội dung</label>
-                <select
-                  value={listType}
-                  onChange={e => setListType(e.target.value as PracticeItemType)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value="words">Từ vựng (Words & Phonics)</option>
-                  <option value="sentences">Mẫu câu (Sentences)</option>
+                <select value={listType} onChange={e => setListType(e.target.value as PracticeItemType)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold">
+                  <option value="words">Từ vựng</option>
+                  <option value="sentences">Mẫu câu</option>
                 </select>
               </div>
-
               <div className="sm:col-span-2">
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Phân loại bài học (Category Tag)</label>
-                <select
-                  value={listTag}
-                  onChange={e => setListTag(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value="curriculum">📚 Chương trình học chính (Curriculum)</option>
-                  <option value="3000words">📖 Bộ từ 3000 từ vựng (3000 Words)</option>
-                  <option value="music">🎵 Âm nhạc & Bài hát (Music & Songs)</option>
-                  <option value="phonics">🔤 Ngữ âm (Phonics & Sounds)</option>
-                  <option value="general">⚙️ Khác (General)</option>
-                </select>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-cyan-500" />
-                    <span>Giao bài cho học sinh cụ thể (Lấy từ CSDL SQLite)</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    ({familyUsers.length} tài khoản trong DB)
-                  </span>
-                </label>
-                <select
-                  value={assignLearner}
-                  onChange={e => setAssignLearner(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value="">-- Tất cả học sinh (Để trống cho tất cả mọi người) --</option>
-                  {familyUsers.map(u => (
-                    <option key={u.uid} value={u.displayName}>
-                      {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
-                    </option>
-                  ))}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300">Phân loại</label>
+                  <button type="button" onClick={() => setIsCatModalOpen(true)} className="text-[11px] font-bold text-emerald-600 underline">+ Quản lý</button>
+                </div>
+                <select value={listTag} onChange={e => setListTag(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold">
+                  {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
             </div>
 
-            {/* Smart NLP & Batch Paste Section */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-              <label className="block text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Wand2 className="w-4 h-4 text-emerald-500" />
-                <span>Nhập nhanh văn bản (Tự động tách câu & dịch MyMemory)</span>
-              </label>
-              <textarea
-                rows={3}
-                value={rawText}
-                onChange={e => setRawText(e.target.value)}
-                placeholder={listType === 'words' ? "Dán danh sách từ phân tách bằng dấu phẩy hoặc xuống dòng:\nhobby, collecting stamps, gardening" : "Dán đoạn văn tiếng Anh:\nWhat is your favorite hobby? I enjoy reading books."}
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              <button
-                type="button"
-                onClick={handleParseAndTranslate}
-                disabled={isTranslating || !rawText.trim()}
-                className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-slate-800 transition-colors"
-              >
-                <Languages className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
-                <span>{isTranslating ? 'Đang phân tích & dịch...' : 'Tách Văn Bản & Dịch Tự Động'}</span>
+              <textarea rows={3} value={rawText} onChange={e => setRawText(e.target.value)} placeholder="Nhập danh sách từ/câu..." className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono" />
+              <button type="button" onClick={handleParseAndTranslate} disabled={isTranslating} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2">
+                <Languages className="w-4 h-4" /> {isTranslating ? 'Đang dịch...' : 'Tách & Dịch'}
               </button>
             </div>
 
-            {/* Staged Dictation Items Editor */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Danh sách từ / câu ({stagedItems.length})
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleAddManualItem}
-                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm ô thủ công</span>
-                </button>
+                <h3 className="text-xs font-black text-slate-700 uppercase">Danh sách ({stagedItems.length})</h3>
+                <button type="button" onClick={handleAddManualItem} className="text-xs font-bold text-emerald-600 underline">Thêm thủ công</button>
               </div>
-
-              <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
                 {stagedItems.map((item, idx) => (
-                  <div key={item.id || idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                    <span className="w-6 text-center text-xs font-mono font-bold text-slate-400">{idx + 1}</span>
-                    <input
-                      type="text"
-                      value={item.text}
-                      onChange={e => handleUpdateStagedItem(idx, 'text', e.target.value)}
-                      placeholder="Tiếng Anh (ví dụ: hobby)"
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <input
-                      type="text"
-                      value={item.vi || ''}
-                      onChange={e => handleUpdateStagedItem(idx, 'vi', e.target.value)}
-                      placeholder="Tiếng Việt (ví dụ: sở thích)"
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveStagedItem(idx)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div key={item.id || idx} className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 text-center text-xs font-mono font-bold text-slate-400">{idx + 1}</span>
+                      <input type="text" value={item.text} onChange={e => handleUpdateStagedItem(idx, 'text', e.target.value)} placeholder="Tiếng Anh" className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 text-xs font-bold" />
+                      <input type="text" value={item.vi} onChange={e => handleUpdateStagedItem(idx, 'vi', e.target.value)} placeholder="Tiếng Việt" className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 text-xs font-bold" />
+                      <button type="button" onClick={() => handleRemoveStagedItem(idx)} className="p-1.5 text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pl-8">
+                      <div className="relative flex items-center">
+                        <Volume2 className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
+                        <input type="text" value={item.ipa || ''} onChange={e => handleUpdateStagedItem(idx, 'ipa', e.target.value)} placeholder="IPA" className="w-full pl-8 pr-2 py-1 rounded-lg border border-slate-200 bg-white dark:bg-slate-900 text-[11px]" />
+                      </div>
+                      <div className="relative flex items-center">
+                        <ImageIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
+                        <input type="text" value={item.imageUrl || ''} onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)} placeholder="Link Hình" className="w-full pl-8 pr-2 py-1 rounded-lg border border-slate-200 bg-white dark:bg-slate-900 text-[11px]" />
+                      </div>
+                      <div className="relative flex items-center">
+                        <FileText className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
+                        <input type="text" value={item.note || ''} onChange={e => handleUpdateStagedItem(idx, 'note', e.target.value)} placeholder="Ghi chú" className="w-full pl-8 pr-2 py-1 rounded-lg border border-slate-200 bg-white dark:bg-slate-900 text-[11px]" />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Save Submit Button */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <button
-                type="submit"
-                disabled={stagedItems.length === 0 || !listName.trim()}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{editingListId ? 'Lưu Cập Nhật Bài Học' : 'Lưu Bài Học Vào SQLite DB'}</span>
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <button type="submit" className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2">
+                <Save className="w-4 h-4" /> <span>{editingListId ? 'Cập Nhật' : 'Lưu Vào SQLite'}</span>
               </button>
             </div>
           </form>

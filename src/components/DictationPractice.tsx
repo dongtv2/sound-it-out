@@ -25,12 +25,12 @@ import {
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
-  const { lists, activeListId, setActiveListId, dialect, gradeItem, reviewItems } = usePractice();
+  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems } = usePractice();
   const { user } = useAuth();
 
   // Search & Filter State in Aside Left
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState<'all' | '3000' | 'music' | 'phonics' | 'curriculum' | 'sentences' | 'assigned'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   // Find active list or fallback to SRS Review Pool mode
   const isSrsMode = activeListId === 'srs-review-pool';
@@ -63,15 +63,15 @@ export const DictationPractice: React.FC = () => {
       const cleanName = l.name.replace(/^Langmaster:\s*/i, '').replace(/^3000 words:\s*/i, '');
       const matchesSearch = !query || cleanName.toLowerCase().includes(query) || (l.items && l.items.some(i => i.text.toLowerCase().includes(query) || (i.vi && i.vi.toLowerCase().includes(query))));
 
-      // 2. Category Filter
+      // 2. Dynamic Category Filter
       if (!matchesSearch) return false;
-      if (filterCategory === '3000') return l.tag === '3000words' || l.name.startsWith('3000 words:') || l.id.includes('langmaster');
-      if (filterCategory === 'music') return l.tag === 'music' || l.id.includes('counting-star');
-      if (filterCategory === 'phonics') return l.tag === 'phonics' || l.id.includes('phonics');
-      if (filterCategory === 'curriculum') return l.tag === 'curriculum' || l.id.includes('unit');
-      if (filterCategory === 'sentences') return l.type === 'sentences';
-      if (filterCategory === 'assigned') return l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
-      
+      if (filterCategory !== 'all') {
+        if (filterCategory === 'assigned') {
+          return l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+        }
+        return l.tag === filterCategory || (filterCategory === '3000words' && (l.id.includes('langmaster') || l.name.startsWith('3000 words:')));
+      }
+
       return true;
     });
   }, [lists, searchQuery, filterCategory, user]);
@@ -190,7 +190,7 @@ export const DictationPractice: React.FC = () => {
               )}
             </div>
 
-            {/* Category Filter Pills */}
+            {/* Dynamic Category Filter Pills */}
             <div className="flex flex-wrap gap-1.5 pt-1">
               <button
                 onClick={() => setFilterCategory('all')}
@@ -202,46 +202,21 @@ export const DictationPractice: React.FC = () => {
               >
                 Tất cả ({lists.length})
               </button>
-              <button
-                onClick={() => setFilterCategory('3000')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  filterCategory === '3000'
-                    ? 'bg-emerald-500 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                3000 Words
-              </button>
-              <button
-                onClick={() => setFilterCategory('music')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  filterCategory === 'music'
-                    ? 'bg-purple-500 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                Bài hát
-              </button>
-              <button
-                onClick={() => setFilterCategory('phonics')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  filterCategory === 'phonics'
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                Phonics
-              </button>
-              <button
-                onClick={() => setFilterCategory('curriculum')}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  filterCategory === 'curriculum'
-                    ? 'bg-blue-500 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                }`}
-              >
-                Giáo trình
-              </button>
+
+              {categories.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setFilterCategory(c.slug)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    filterCategory === c.slug
+                      ? 'bg-emerald-500 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+
               {user?.displayName && (
                 <button
                   onClick={() => setFilterCategory('assigned')}
@@ -423,14 +398,36 @@ export const DictationPractice: React.FC = () => {
                   </select>
                 </div>
 
-                {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX */}
-                <div className="w-full max-w-xl mx-auto p-4 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl text-center shadow-xs">
-                  <div className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider mb-0.5">
-                    Nghĩa Tiếng Việt
+                {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX & IPA & IMAGE */}
+                <div className="w-full max-w-xl mx-auto space-y-3">
+                  {/* Image Illustration if available */}
+                  {currentItem.imageUrl && (
+                    <div className="w-full max-h-48 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
+                      <img src={currentItem.imageUrl} alt={currentItem.text} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl text-center shadow-xs space-y-1">
+                    <div className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                      Nghĩa Tiếng Việt & Phiên Âm
+                    </div>
+                    <div className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2 flex-wrap">
+                      <span>{currentItem.vi || 'Chưa có bản dịch'}</span>
+                      {currentItem.ipa && (
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                          {currentItem.ipa.startsWith('/') ? currentItem.ipa : `/${currentItem.ipa}/`}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    {currentItem.vi || 'Chưa có bản dịch'}
-                  </div>
+
+                  {/* Note / Hint Tip Box */}
+                  {currentItem.note && (
+                    <div className="p-3 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 text-center flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>Ghi chú: {currentItem.note}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

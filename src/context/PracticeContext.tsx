@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import type { PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport } from '@/types';
+import type { CategoryTag, PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport } from '@/types';
 import { api } from '@/services/api';
 
 export type SoundItOutTab = 'practice' | 'composer' | 'assigned' | 'reports' | 'admin';
@@ -8,6 +8,7 @@ interface PracticeContextType {
   activeTab: SoundItOutTab;
   setActiveTab: (tab: SoundItOutTab) => void;
   lists: PracticeList[];
+  categories: CategoryTag[];
   reviewItems: ReviewItem[];
   studentReports: StudentReport[];
   dialect: Dialect;
@@ -18,6 +19,9 @@ interface PracticeContextType {
   addList: (list: PracticeList) => Promise<void>;
   updateList: (list: PracticeList) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
+  addCategory: (cat: Partial<CategoryTag>) => Promise<void>;
+  updateCategory: (cat: CategoryTag) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   gradeItem: (item: PracticeItem, gradeOrCorrect: boolean | SrsGrade, type: PracticeItemType) => void;
   clearAllReview: () => void;
   removeReviewItem: (text: string) => void;
@@ -42,14 +46,16 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [uiLang, setUiLangState] = useState<UiLanguage>('vi');
 
   const [lists, setLists] = useState<PracticeList[]>([]);
+  const [categories, setCategories] = useState<CategoryTag[]>([]);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [studentReports, setStudentReports] = useState<StudentReport[]>([]);
 
   // Fetch initial data from SQLite Backend API
   const refreshData = async () => {
     try {
-      const [dbLists, dbReviews, dbReports] = await Promise.all([
+      const [dbLists, dbCats, dbReviews, dbReports] = await Promise.all([
         api.getLists(),
+        api.getCategories(),
         api.getReviewItems(),
         api.getReports()
       ]);
@@ -60,6 +66,7 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setActiveListId(dbLists[0].id);
         }
       }
+      if (dbCats) setCategories(dbCats);
       if (dbReviews) setReviewItems(dbReviews);
       if (dbReports) setStudentReports(dbReports);
     } catch (e) {
@@ -201,6 +208,28 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const addCategory = async (cat: Partial<CategoryTag>) => {
+    await api.saveCategory(cat);
+    const updatedCats = await api.getCategories();
+    if (updatedCats) setCategories(updatedCats);
+  };
+
+  const updateCategory = async (cat: CategoryTag) => {
+    await api.saveCategory(cat);
+    const updatedCats = await api.getCategories();
+    if (updatedCats) setCategories(updatedCats);
+  };
+
+  const deleteCategory = async (id: string) => {
+    await api.deleteCategory(id);
+    const [updatedCats, updatedLists] = await Promise.all([
+      api.getCategories(),
+      api.getLists()
+    ]);
+    if (updatedCats) setCategories(updatedCats);
+    if (updatedLists) setLists(updatedLists);
+  };
+
   const addStudentReport = async (report: StudentReport) => {
     await api.addReport(report);
     setStudentReports(prev => [report, ...prev]);
@@ -239,6 +268,7 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       activeTab,
       setActiveTab,
       lists,
+      categories,
       reviewItems,
       studentReports,
       dialect,
@@ -249,6 +279,9 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addList,
       updateList,
       deleteList,
+      addCategory,
+      updateCategory,
+      deleteCategory,
       gradeItem,
       clearAllReview,
       removeReviewItem,

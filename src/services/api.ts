@@ -1,4 +1,4 @@
-import type { PracticeList, ReviewItem, StudentReport, UserProfile } from '@/types';
+import type { CategoryTag, PracticeList, ReviewItem, StudentReport, UserProfile } from '@/types';
 
 const API_BASE = '/api';
 
@@ -185,6 +185,43 @@ export const api = {
       return res.ok;
     } catch (e) {
       console.warn('API deleteReport error:', e);
+      return false;
+    }
+  },
+
+  // Dynamic Category Tags Management
+  async getCategories(): Promise<CategoryTag[]> {
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('API getCategories error:', e);
+    }
+    return [];
+  },
+
+  async saveCategory(cat: Partial<CategoryTag>): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cat)
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn('API saveCategory error:', e);
+      return false;
+    }
+  },
+
+  async deleteCategory(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/categories/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn('API deleteCategory error:', e);
       return false;
     }
   }

@@ -455,12 +455,7 @@ export const DictationPractice: React.FC = () => {
               </div>
 
               {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
-              <div className="w-full max-w-xl mx-auto p-4 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-2">
-                <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider text-center flex items-center justify-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Cấu Trúc Ký Tự Cần Gõ ({currentItem.text.split(' ').map(w => '_'.repeat(w.length)).join('  ')})</span>
-                </div>
-                
+              <div className="w-full max-w-xl mx-auto p-4 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
                 {/* Letter Slots */}
                 <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-3.5 py-1">
                   {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {

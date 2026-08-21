@@ -22,7 +22,12 @@ import {
   Trophy, 
   Star, 
   UserCheck,
-  GraduationCap
+  GraduationCap,
+  Globe,
+  AlertTriangle,
+  TrendingUp,
+  Medal,
+  Users
 } from 'lucide-react';
 
 export const WorkspaceView: React.FC = () => {
@@ -32,6 +37,9 @@ export const WorkspaceView: React.FC = () => {
   // State to track if student is in expanded practice mode within Assigned tab
   const [practicingAssignedId, setPracticingAssignedId] = useState<string | null>(null);
 
+  // Sub-tab state for Reports (Leaderboard vs Individual Weakness)
+  const [reportSubTab, setReportSubTab] = useState<'leaderboard' | 'individual'>('leaderboard');
+
   // Filter assigned homework for current student
   const assignedLists = lists.filter(l => 
     l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase())
@@ -40,6 +48,22 @@ export const WorkspaceView: React.FC = () => {
   // Calculate total items assigned
   const totalAssignedItems = assignedLists.reduce((sum, l) => sum + (l.items?.length || 0), 0);
   const activeAssignedList = lists.find(l => l.id === practicingAssignedId);
+
+  // Diagnostic Weakness Analysis (Group reports by originalText to identify misspellings)
+  const weakWordsMap = React.useMemo(() => {
+    const map: Record<string, { originalText: string; vi?: string; count: number; listName: string }> = {};
+    studentReports.forEach(r => {
+      const orig = r.originalText.trim();
+      const isMismatch = r.originalText.trim().toLowerCase() !== r.correctedText.trim().toLowerCase();
+      if (isMismatch) {
+        if (!map[orig]) {
+          map[orig] = { originalText: orig, vi: r.correctedVi, count: 0, listName: r.listName };
+        }
+        map[orig].count += 1;
+      }
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+  }, [studentReports]);
 
   return (
     <div className="min-h-[calc(100vh-70px)] bg-slate-50 dark:bg-slate-950">
@@ -259,52 +283,256 @@ export const WorkspaceView: React.FC = () => {
         </>
       )}
 
-      {/* 4. REPORTS TAB (Parent / Teacher / Admin View) */}
+      {/* 4. REPORTS TAB (Parent / Teacher / Admin View: Báo Cáo Chung & Báo Cáo Riêng - Chẩn Đoán Điểm Yếu) */}
       {activeTab === 'reports' && (
-        <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-6 animate-in fade-in duration-300">
+          
+          {/* Header Banner */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 rounded-2xl">
                 <BarChart3 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-black text-slate-900 dark:text-white">Báo Cáo Tiến Độ Học Tập Gia Đình</h1>
-                <p className="text-xs font-bold text-slate-500">Lịch sử kết quả luyện nghe và phát âm của các bé</p>
+                <h1 className="text-xl font-black text-slate-900 dark:text-white">Báo Cáo Tiến Độ & Chẩn Đoán Điểm Yếu</h1>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  Tương tác từ Khu Vực Học Chung & Bài Được Giao được tổng hợp để tìm ra điểm yếu giúp học sinh tiến bộ.
+                </p>
               </div>
+            </div>
+
+            {/* Sub-tab switcher: Báo Cáo Chung & Bảng Xếp Hạng vs Báo Cáo Riêng & Điểm Yếu */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  setReportSubTab('leaderboard');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                  reportSubTab === 'leaderboard'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Trophy className="w-4 h-4 text-amber-500 fill-amber-400" />
+                <span>Báo Cáo Chung & Bảng Xếp Hạng</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  setReportSubTab('individual');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                  reportSubTab === 'individual'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4 text-rose-500" />
+                <span>Báo Cáo Riêng & Chẩn Đoán Điểm Yếu</span>
+              </button>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {studentReports.length === 0 ? (
-              <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 text-slate-400 font-bold text-xs">
-                Chưa có dữ liệu làm bài. Học sinh luyện tập bài đầu tiên sẽ hiển thị kết quả tại đây!
-              </div>
-            ) : (
-              studentReports.map(report => (
-                <div key={report.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-sm text-slate-900 dark:text-white">{report.listName}</span>
-                      <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(report.timestamp).toLocaleTimeString('vi-VN')}
+          {/* SUB-TAB 1: BÁO CÁO CHUNG & BẢNG XẾP HẠNG HĂNG HÁI */}
+          {reportSubTab === 'leaderboard' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Leaderboard Card */}
+              <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500 fill-amber-400" />
+                      <span>🏆 Bảng Xếp Hạng Hăng Hái Học Tập (Khu Vực Học Chung)</span>
+                    </h2>
+                    <p className="text-xs font-bold text-slate-400 mt-1">
+                      Xếp hạng các học sinh tích cực hoàn thành bài học và duy trì chuỗi học tập đều đặn.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Top 1 */}
+                  <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-500/10 to-amber-500/5 border-2 border-amber-400/60 shadow-lg space-y-3 relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-400 text-slate-950 flex items-center gap-1 shadow-md">
+                        🥇 Hạng 1 (Xuất Sắc)
                       </span>
+                      <Medal className="w-6 h-6 text-amber-500 fill-amber-400" />
                     </div>
-                    <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                      Gốc: <span className="font-mono">{report.originalText}</span> ➔ Gõ: <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{report.correctedText}</span>
+
+                    <div className="space-y-1">
+                      <h3 className="font-black text-lg text-slate-900 dark:text-white">
+                        {user?.displayName || 'Bé Phúc Trí'}
+                      </h3>
+                      <div className="text-xs font-bold text-slate-500">Học sinh chuyên cần nhất</div>
+                    </div>
+
+                    <div className="pt-2 border-t border-amber-200 dark:border-amber-900/40 grid grid-cols-2 gap-2 text-center">
+                      <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
+                        <div className="text-sm font-black text-amber-600 dark:text-amber-400">45 Từ</div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
+                        <div className="text-sm font-black text-amber-600 dark:text-amber-400">3 Ngày 🔥</div>
+                      </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => deleteStudentReport(report.id)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Top 2 */}
+                  <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        🥈 Hạng 2
+                      </span>
+                      <Medal className="w-5 h-5 text-slate-400" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="font-black text-base text-slate-900 dark:text-white">
+                        Cô Mai Anh
+                      </h3>
+                      <div className="text-xs font-bold text-slate-400">Giáo viên đồng hành</div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-center">
+                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
+                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">30 Từ</div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
+                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">2 Ngày 🔥</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top 3 */}
+                  <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        🥉 Hạng 3
+                      </span>
+                      <Medal className="w-5 h-5 text-amber-600" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="font-black text-base text-slate-900 dark:text-white">
+                        Thành Viên Gia Đình
+                      </h3>
+                      <div className="text-xs font-bold text-slate-400">Học viên chăm chỉ</div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-center">
+                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
+                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">15 Từ</div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
+                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">1 Ngày 🔥</div>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* SUB-TAB 2: BÁO CÁO RIÊNG & CHẨN ĐOÁN ĐIỂM YẾU */}
+          {reportSubTab === 'individual' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              {/* Weakness Diagnostic Section */}
+              <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-rose-500" />
+                      <span>🎯 Chẩn Đoán Điểm Yếu Cần Cải Thiện (Phát Âm & Chính Tả)</span>
+                    </h2>
+                    <p className="text-xs font-bold text-slate-400 mt-1">
+                      Danh sách các từ / cụm từ học sinh hay gõ sai nhất để giúp Phụ huynh & Giáo viên kịp thời giao bài bổ trợ.
+                    </p>
+                  </div>
+                </div>
+
+                {weakWordsMap.length === 0 ? (
+                  <div className="text-center py-8 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/60 space-y-1">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                    <h3 className="font-black text-sm text-emerald-800 dark:text-emerald-300">Tuyệt Vời! Chưa Phát Hiện Điểm Yếu Nổi Bật</h3>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Học sinh hoàn thành bài học với tỷ lệ chính xác rất cao.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {weakWordsMap.slice(0, 5).map((w, idx) => (
+                      <div key={idx} className="p-4 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 flex items-center justify-between gap-4 flex-wrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-sm text-slate-900 dark:text-white font-mono">{w.originalText}</span>
+                            {w.vi && <span className="text-xs text-slate-500 font-bold">({w.vi})</span>}
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
+                              ⚠️ Nhập sai {w.count} lần
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-rose-700 dark:text-rose-300">
+                            Gợi ý: Cần thêm từ vựng này vào danh sách Bài Được Giao riêng cho học sinh.
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Detailed Activity History */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  Nhật Ký Chi Tiết Tất Cả Lần Làm Bài
+                </h3>
+
+                <div className="space-y-3">
+                  {studentReports.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 dark:bg-slate-950 rounded-2xl text-slate-400 font-bold text-xs">
+                      Chưa có dữ liệu làm bài. Học sinh luyện tập bài đầu tiên sẽ hiển thị kết quả tại đây!
+                    </div>
+                  ) : (
+                    studentReports.map(report => (
+                      <div key={report.id} className="bg-slate-50/60 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-sm text-slate-900 dark:text-white">{report.listName}</span>
+                            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(report.timestamp).toLocaleTimeString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                            Gốc: <span className="font-mono">{report.originalText}</span> ➔ Gõ: <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{report.correctedText}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => deleteStudentReport(report.id)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </div>
       )}
 

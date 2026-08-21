@@ -4,6 +4,7 @@ import { usePractice, type SoundItOutTab } from '@/context/PracticeContext';
 import { soundEffects } from '@/services/sound-effects';
 import { 
   Volume2, 
+  Globe,
   Sparkles, 
   User, 
   KeyRound, 
@@ -83,14 +84,15 @@ export const Navbar: React.FC = () => {
         <nav className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
           <button
             onClick={() => handleTabClick('practice')}
+            title="Khu vực học chung cho tất cả học sinh tự do ôn luyện & thi đua xếp hạng"
             className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'practice'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
             }`}
           >
-            <Volume2 className="w-4 h-4" />
-            <span>Luyện Âm Dictation</span>
+            <Globe className="w-4 h-4" />
+            <span>Khu Vực Học Chung</span>
             {dueSrsCount > 0 && (
               <span className="px-1.5 py-0.5 text-[10px] bg-amber-400 text-slate-950 font-mono font-bold rounded-full animate-pulse">
                 {dueSrsCount} SRS

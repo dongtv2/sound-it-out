@@ -112,7 +112,8 @@ export const AdminPortal: React.FC = () => {
         {/* Tab Header Navigation */}
         <div className="flex items-center gap-2 mt-8 border-t border-purple-500/20 pt-6 overflow-x-auto">
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('users'); }}
+            type="button"
+            onClick={() => { setAdminTab('users'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'users'
                 ? 'bg-white text-purple-950 shadow-lg'
@@ -124,7 +125,8 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('settings'); }}
+            type="button"
+            onClick={() => { setAdminTab('settings'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'settings'
                 ? 'bg-white text-purple-950 shadow-lg'
@@ -136,7 +138,8 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('catalog'); }}
+            type="button"
+            onClick={() => { setAdminTab('catalog'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'catalog'
                 ? 'bg-white text-purple-950 shadow-lg'
@@ -148,7 +151,8 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('reports'); }}
+            type="button"
+            onClick={() => { setAdminTab('reports'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'reports'
                 ? 'bg-white text-purple-950 shadow-lg'
@@ -160,7 +164,8 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('srs'); }}
+            type="button"
+            onClick={() => { setAdminTab('srs'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'srs'
                 ? 'bg-white text-purple-950 shadow-lg'
@@ -172,7 +177,8 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => { soundEffects.playPop(); setAdminTab('tts'); }}
+            type="button"
+            onClick={() => { setAdminTab('tts'); try { soundEffects.playPop(); } catch (e) {} }}
             className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               adminTab === 'tts'
                 ? 'bg-white text-purple-950 shadow-lg'

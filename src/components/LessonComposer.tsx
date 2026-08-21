@@ -193,7 +193,7 @@ export const LessonComposer: React.FC = () => {
       if (!matchesSearch) return false;
       if (filterCategory !== 'all') {
         if (filterCategory === 'assigned') {
-          return l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+          return Boolean(l.learner && l.learner.trim());
         }
         return l.tag === filterCategory || (filterCategory === '3000words' && (l.id.includes('langmaster') || l.name.startsWith('3000 words:')));
       }
@@ -479,18 +479,21 @@ export const LessonComposer: React.FC = () => {
                 </button>
               ))}
 
-              {user?.displayName && (
-                <button
-                  onClick={() => setFilterCategory('assigned')}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                    filterCategory === 'assigned'
-                      ? 'bg-cyan-500 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                  }`}
-                >
-                  Giao bạn
-                </button>
-              )}
+              <button
+                onClick={() => setFilterCategory('assigned')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  filterCategory === 'assigned'
+                    ? 'bg-cyan-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                <span>Danh sách bài đã giao</span>
+                <span className={`px-1.5 py-0.2 rounded-full font-mono text-[9px] ${
+                  filterCategory === 'assigned' ? 'bg-cyan-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                }`}>
+                  {assignedListsCount}
+                </span>
+              </button>
             </div>
 
             {/* Scrollable Lesson List */}
@@ -526,6 +529,11 @@ export const LessonComposer: React.FC = () => {
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                               {tag}
                             </span>
+                            {l.learner && l.learner.trim() && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200 flex items-center gap-1">
+                                👤 {l.learner}
+                              </span>
+                            )}
                           </div>
                         </div>
 

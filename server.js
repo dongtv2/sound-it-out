@@ -159,6 +159,24 @@ if (checkUserExist.get('maianh@metta.family').count === 0) {
   );
 }
 
+if (checkUserExist.get('hami@metta.family').count === 0) {
+  db.prepare(`
+    INSERT INTO users (uid, displayName, email, password, role, isSuperuser, isStaff, userPermissions, avatarUrl, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'stu-103',
+    'Bé Hà Mi',
+    'hami@metta.family',
+    '311218',
+    'student',
+    0,
+    0,
+    JSON.stringify(['content.view_list']),
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=hami',
+    Date.now()
+  );
+}
+
 // Seed Practice Lists if empty
 const listCount = db.prepare('SELECT COUNT(*) as count FROM practice_lists').get().count;
 if (listCount === 0) {

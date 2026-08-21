@@ -594,8 +594,8 @@ app.delete('/api/reports/:id', (req, res) => {
   res.json({ success: true });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Sound It Out SQLite Family API Server is running on http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Sound It Out SQLite Family API Server is running on http://127.0.0.1:${PORT}`);
 });
 
 server.on('error', (err) => {

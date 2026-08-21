@@ -411,7 +411,7 @@ export const DictationPractice: React.FC = () => {
 
           {/* Flashcard Practice Area */}
           {practiceItems.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-3 shadow-md min-h-[calc(100vh-180px)] flex flex-col items-center justify-center">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-3 shadow-md">
               <BrainCircuit className="w-10 h-10 text-slate-400 mx-auto" />
               <h3 className="text-base font-black text-slate-900 dark:text-white">Chưa có bài tập trong danh sách này</h3>
               <p className="text-xs font-bold text-slate-500 max-w-sm mx-auto">
@@ -419,9 +419,9 @@ export const DictationPractice: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-3 relative overflow-hidden flex flex-col justify-between min-h-[calc(100vh-180px)] max-h-[calc(100vh-180px)]">
+            <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-3.5 relative overflow-hidden">
               {/* Progress Bar */}
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden shrink-0">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-300"
                   style={{ width: `${((currentIndex + 1) / practiceItems.length) * 100}%` }}
@@ -429,13 +429,13 @@ export const DictationPractice: React.FC = () => {
               </div>
 
               {/* 2-COLUMN SPLIT GRID: LEFT (AUDIO & IMAGE) | RIGHT (PRACTICE WORKSPACE) */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch flex-1 min-h-0 overflow-y-auto pr-0.5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-center">
                 
                 {/* LEFT COLUMN: AUDIO PLAYER & IMAGE THUMBNAIL (md:col-span-5) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-between space-y-3 text-center p-3 sm:p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 h-full">
+                <div className="md:col-span-5 flex flex-col items-center justify-center space-y-3 text-center p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80">
                   
                   {/* Audio Controls Box (Moved to Top) */}
-                  <div className="flex items-center gap-3 py-1 shrink-0">
+                  <div className="flex items-center gap-3 py-1">
                     <button
                       type="button"
                       onClick={() => speakText(currentItem.text)}
@@ -466,9 +466,9 @@ export const DictationPractice: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Image Illustration (Below Audio Button with Proportional Stretched Height) */}
+                  {/* Image Illustration (Below Audio Button with Proportional Height) */}
                   {currentItem.imageUrl && !imgError && (
-                    <div className="w-full flex-1 min-h-[140px] max-h-[calc(100vh-320px)] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs bg-slate-100 dark:bg-slate-900">
+                    <div className="w-full h-36 sm:h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs bg-slate-100 dark:bg-slate-900">
                       <img 
                         src={currentItem.imageUrl} 
                         alt={currentItem.text} 
@@ -480,7 +480,7 @@ export const DictationPractice: React.FC = () => {
                 </div>
 
                 {/* RIGHT COLUMN: MEANING, WORD SLOTS & SPELLING INPUT (md:col-span-7) */}
-                <div className="md:col-span-7 flex flex-col justify-between space-y-3 h-full">
+                <div className="md:col-span-7 space-y-3.5 my-auto">
                   
                   {/* VIETNAMESE MEANING TEXTBOX & IPA */}
                   <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 text-center shadow-xs space-y-0.5">

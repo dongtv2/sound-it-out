@@ -27,7 +27,8 @@ import {
   PanelRight,
   PanelRightClose,
   Maximize2,
-  Minimize2
+  Minimize2,
+  ExternalLink
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
@@ -111,6 +112,13 @@ export const DictationPractice: React.FC = () => {
       return dueA - dueB;
     });
   }, [reviewItems]);
+
+  // Parent lesson info of current item (link to parent list)
+  const itemParentList = useMemo(() => {
+    if (!isSrsMode && activeList) return activeList;
+    if (!currentItem?.text) return null;
+    return lists.find(l => l.items?.some(i => i.id === currentItem.id || i.text.trim().toLowerCase() === currentItem.text.trim().toLowerCase())) || null;
+  }, [isSrsMode, activeList, currentItem, lists]);
 
   // Web Speech API Audio Player
   const speakText = (text: string) => {
@@ -431,45 +439,79 @@ export const DictationPractice: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-3.5 relative overflow-hidden">
-              {/* Progress Bar */}
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-300"
-                  style={{ width: `${((currentIndex + 1) / practiceItems.length) * 100}%` }}
-                />
+            <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between min-h-[480px] sm:min-h-[520px]">
+              
+              {/* Progress Bar & Parent Lesson Link Bar */}
+              <div className="space-y-3">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-300"
+                    style={{ width: `${((currentIndex + 1) / practiceItems.length) * 100}%` }}
+                  />
+                </div>
+
+                {/* PARENT LESSON INFO BADGE & LINK */}
+                <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
+                  {itemParentList ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEffects.playPop();
+                        setActiveListId(itemParentList.id);
+                        setCurrentIndex(0);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-all cursor-pointer shadow-xs max-w-full truncate group"
+                      title={`Bấm để chuyển ngay sang xem bài học: ${itemParentList.name}`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="truncate">Thuộc bài: <strong className="font-black text-slate-900 dark:text-white ml-0.5">{itemParentList.name.replace(/^Langmaster:\s*/i, '').replace(/^3000 words:\s*/i, '')}</strong></span>
+                      <ExternalLink className="w-3 h-3 text-emerald-500 shrink-0 ml-0.5" />
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-slate-400">
+                      Mục {currentIndex + 1} / {practiceItems.length}
+                    </span>
+                  )}
+
+                  {isSrsMode && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 fill-amber-400" />
+                      <span>Ôn Tập Tự Động</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* 2-COLUMN SPLIT GRID: LEFT (AUDIO & IMAGE) | RIGHT (PRACTICE WORKSPACE) */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-center">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-stretch my-auto min-h-[380px] sm:min-h-[420px]">
                 
                 {/* LEFT COLUMN: AUDIO PLAYER & IMAGE THUMBNAIL (md:col-span-5) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center space-y-3 text-center p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80">
+                <div className="md:col-span-5 flex flex-col items-center justify-between space-y-4 text-center p-4 sm:p-5 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 h-full min-h-[360px]">
                   
                   {/* Audio Controls Box (Moved to Top) */}
-                  <div className="flex items-center gap-3 py-1">
+                  <div className="flex items-center gap-3 py-2 my-auto">
                     <button
                       type="button"
                       onClick={() => speakText(currentItem.text)}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0"
                     >
-                      <Volume2 className="w-6 h-6 group-hover:animate-bounce" />
+                      <Volume2 className="w-7 h-7 sm:w-8 sm:h-8 group-hover:animate-bounce" />
                     </button>
 
-                    <div className="flex flex-col items-start gap-1 text-left">
+                    <div className="flex flex-col items-start gap-1.5 text-left">
                       <button
                         type="button"
                         onClick={() => speakText(currentItem.text)}
-                        className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <RotateCcw className="w-3.5 h-3.5" />
                         <span>Phát lại âm thanh</span>
                       </button>
 
                       <select
                         value={playbackSpeed}
                         onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                        className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border-none focus:outline-none cursor-pointer"
+                        className="text-[11px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border-none focus:outline-none cursor-pointer"
                       >
                         <option value={1.0}>1.0x Chuẩn</option>
                         <option value={0.75}>0.75x Chậm</option>
@@ -480,7 +522,7 @@ export const DictationPractice: React.FC = () => {
 
                   {/* Image Illustration (Below Audio Button with Proportional Height) */}
                   {currentItem.imageUrl && !imgError && (
-                    <div className="w-full h-36 sm:h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs bg-slate-100 dark:bg-slate-900">
+                    <div className="w-full h-40 sm:h-48 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs bg-slate-100 dark:bg-slate-900 mt-auto">
                       <img 
                         src={currentItem.imageUrl} 
                         alt={currentItem.text} 
@@ -492,17 +534,17 @@ export const DictationPractice: React.FC = () => {
                 </div>
 
                 {/* RIGHT COLUMN: MEANING, WORD SLOTS & SPELLING INPUT (md:col-span-7) */}
-                <div className="md:col-span-7 space-y-3.5 my-auto">
+                <div className="md:col-span-7 flex flex-col justify-between space-y-4 h-full min-h-[360px]">
                   
                   {/* VIETNAMESE MEANING TEXTBOX & IPA */}
-                  <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 text-center shadow-xs space-y-0.5">
-                    <div className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                  <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 text-center shadow-xs space-y-1">
+                    <div className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
                       Nghĩa Tiếng Việt & Phiên Âm
                     </div>
-                    <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2 flex-wrap">
+                    <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2 flex-wrap">
                       <span>{currentItem.vi || 'Chưa có bản dịch'}</span>
                       {currentItem.ipa && (
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                           {currentItem.ipa.startsWith('/') ? currentItem.ipa : `/${currentItem.ipa}/`}
                         </span>
                       )}
@@ -511,15 +553,15 @@ export const DictationPractice: React.FC = () => {
 
                   {/* Note / Hint Tip Box */}
                   {currentItem.note && (
-                    <div className="p-2 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-[10px] sm:text-[11px] font-bold text-blue-700 dark:text-blue-300 text-center flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <div className="p-2.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 text-center flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
                       <span>Ghi chú: {currentItem.note}</span>
                     </div>
                   )}
 
                   {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
-                  <div className="w-full p-2.5 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
-                    <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-2.5 py-0.5">
+                  <div className="w-full p-3 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs my-auto">
+                    <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-3 py-1">
                       {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {
                         let wordStartCharIdx = 0;
                         for (let w = 0; w < wordIdx; w++) {
@@ -538,7 +580,7 @@ export const DictationPractice: React.FC = () => {
                               return (
                                 <div
                                   key={charIdx}
-                                  className={`w-5.5 h-7.5 sm:w-6.5 sm:h-8 rounded-lg flex items-center justify-center font-mono font-black text-xs transition-all shadow-xs ${
+                                  className={`w-6 h-8 sm:w-7.5 sm:h-9 rounded-lg flex items-center justify-center font-mono font-black text-xs sm:text-sm transition-all shadow-xs ${
                                     isMatch
                                       ? 'bg-emerald-500 text-white shadow-emerald-500/20 ring-1 ring-emerald-400'
                                       : isError
@@ -557,7 +599,7 @@ export const DictationPractice: React.FC = () => {
                   </div>
 
                   {/* SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
-                  <form onSubmit={handleSubmitSpelling} className="w-full space-y-2.5">
+                  <form onSubmit={handleSubmitSpelling} className="w-full space-y-3 mt-auto">
                     <div className="relative">
                       <input
                         ref={inputRef}

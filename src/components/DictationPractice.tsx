@@ -419,7 +419,7 @@ export const DictationPractice: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-3 relative overflow-hidden">
               {/* Progress Bar */}
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                 <div
@@ -428,42 +428,15 @@ export const DictationPractice: React.FC = () => {
                 />
               </div>
 
-              {/* Audio Player & Controls */}
-              <div className="flex flex-col items-center justify-center space-y-3 text-center">
-                <button
-                  onClick={() => speakText(currentItem.text)}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-                >
-                  <Volume2 className="w-7 h-7 sm:w-8 sm:h-8 group-hover:animate-bounce" />
-                </button>
-
-                <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => speakText(currentItem.text)}
-                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Phát lại âm thanh</span>
-                  </button>
-
-                  <span className="text-slate-300 dark:text-slate-700">•</span>
-
-                  <select
-                    value={playbackSpeed}
-                    onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                    className="text-[11px] font-bold text-slate-500 bg-transparent border-none focus:outline-none cursor-pointer"
-                  >
-                    <option value={1.0}>1.0x</option>
-                    <option value={0.75}>0.75x</option>
-                    <option value={0.5}>0.5x</option>
-                  </select>
-                </div>
-
-                {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX & IPA & IMAGE */}
-                <div className="w-full max-w-3xl mx-auto space-y-2.5">
+              {/* 2-COLUMN SPLIT GRID: LEFT (AUDIO & IMAGE) | RIGHT (PRACTICE WORKSPACE) */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-center">
+                
+                {/* LEFT COLUMN: AUDIO PLAYER & IMAGE THUMBNAIL (md:col-span-5) */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center space-y-2.5 text-center p-3 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80">
+                  
                   {/* Image Illustration if available and valid */}
                   {currentItem.imageUrl && !imgError && (
-                    <div className="w-full max-h-36 sm:max-h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <div className="w-full h-28 sm:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
                       <img 
                         src={currentItem.imageUrl} 
                         alt={currentItem.text} 
@@ -473,7 +446,44 @@ export const DictationPractice: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 text-center shadow-xs space-y-0.5">
+                  {/* Audio Controls Box */}
+                  <div className="flex items-center gap-3 py-1">
+                    <button
+                      type="button"
+                      onClick={() => speakText(currentItem.text)}
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer group shrink-0"
+                    >
+                      <Volume2 className="w-6 h-6 group-hover:animate-bounce" />
+                    </button>
+
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <button
+                        type="button"
+                        onClick={() => speakText(currentItem.text)}
+                        className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Phát lại âm thanh</span>
+                      </button>
+
+                      <select
+                        value={playbackSpeed}
+                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border-none focus:outline-none cursor-pointer"
+                      >
+                        <option value={1.0}>1.0x Chuẩn</option>
+                        <option value={0.75}>0.75x Chậm</option>
+                        <option value={0.5}>0.5x Rất chậm</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: MEANING, WORD SLOTS & SPELLING INPUT (md:col-span-7) */}
+                <div className="md:col-span-7 space-y-3">
+                  
+                  {/* VIETNAMESE MEANING TEXTBOX & IPA */}
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 text-center shadow-xs space-y-0.5">
                     <div className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
                       Nghĩa Tiếng Việt & Phiên Âm
                     </div>
@@ -489,174 +499,173 @@ export const DictationPractice: React.FC = () => {
 
                   {/* Note / Hint Tip Box */}
                   {currentItem.note && (
-                    <div className="p-2.5 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-[11px] font-bold text-blue-700 dark:text-blue-300 text-center flex items-center justify-center gap-1.5">
+                    <div className="p-2 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl text-[10px] sm:text-[11px] font-bold text-blue-700 dark:text-blue-300 text-center flex items-center justify-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                       <span>Ghi chú: {currentItem.note}</span>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
-              <div className="w-full max-w-3xl mx-auto p-3.5 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
-                {/* Letter Slots */}
-                <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-3 py-0.5">
-                  {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {
-                    let wordStartCharIdx = 0;
-                    for (let w = 0; w < wordIdx; w++) {
-                      wordStartCharIdx += wordArr[w].length + 1;
-                    }
+                  {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
+                  <div className="w-full p-2.5 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+                    <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-2.5 py-0.5">
+                      {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {
+                        let wordStartCharIdx = 0;
+                        for (let w = 0; w < wordIdx; w++) {
+                          wordStartCharIdx += wordArr[w].length + 1;
+                        }
 
-                    return (
-                      <div key={wordIdx} className="flex items-center gap-1">
-                        {word.split('').map((char, charIdx) => {
-                          const globalIdx = wordStartCharIdx + charIdx;
-                          const isTyped = globalIdx < userInput.length;
-                          const userChar = userInput[globalIdx];
-                          const isMatch = isTyped && userChar && userChar.toLowerCase() === char.toLowerCase();
-                          const isError = isTyped && !isMatch;
+                        return (
+                          <div key={wordIdx} className="flex items-center gap-1">
+                            {word.split('').map((char, charIdx) => {
+                              const globalIdx = wordStartCharIdx + charIdx;
+                              const isTyped = globalIdx < userInput.length;
+                              const userChar = userInput[globalIdx];
+                              const isMatch = isTyped && userChar && userChar.toLowerCase() === char.toLowerCase();
+                              const isError = isTyped && !isMatch;
 
-                          return (
-                            <div
-                              key={charIdx}
-                              className={`w-6 h-8 sm:w-7 sm:h-9 rounded-lg flex items-center justify-center font-mono font-black text-xs sm:text-sm transition-all shadow-xs ${
-                                isMatch
-                                  ? 'bg-emerald-500 text-white shadow-emerald-500/20 ring-1 ring-emerald-400'
-                                  : isError
-                                  ? 'bg-rose-500 text-white ring-2 ring-rose-400 animate-pulse'
-                                  : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600'
-                              }`}
-                            >
-                              {isTyped ? (userChar || char) : '_'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* EXPANDED SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
-              <form onSubmit={handleSubmitSpelling} className="w-full max-w-3xl mx-auto space-y-3">
-                <div className="relative">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    autoFocus
-                    disabled={isAnswered && isCorrect}
-                    value={userInput}
-                    onChange={e => setUserInput(e.target.value)}
-                    placeholder={
-                      isRetrying
-                        ? "Sửa lại vị trí bị sai..."
-                        : "Nhập lại chính tả tiếng Anh bạn nghe được..."
-                    }
-                    className={`w-full px-4 py-3 text-center text-base sm:text-lg font-black rounded-2xl border-2 transition-all focus:outline-none ${
-                      isAnswered
-                        ? isCorrect
-                          ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-100'
-                          : 'border-rose-500 bg-rose-50/50 text-rose-900 dark:bg-rose-950/50 dark:text-rose-100'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:border-emerald-500'
-                    }`}
-                  />
-                </div>
-
-                {!isAnswered ? (
-                  <button
-                    type="submit"
-                    disabled={!userInput.trim()}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-sm shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    Kiểm Tra Đáp Án
-                  </button>
-                ) : (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    
-                    {/* CORRECT FEEDBACK BANNER */}
-                    {isCorrect && (
-                      <div className="p-4 rounded-2xl flex items-center gap-3 border bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="w-6 h-6 shrink-0" />
-                        <div>
-                          <div className="font-black text-sm">Chính xác! Bạn làm rất tốt!</div>
-                          <div className="text-xs opacity-80 mt-0.5">
-                            Nghĩa Tiếng Việt: {currentItem.vi}
+                              return (
+                                <div
+                                  key={charIdx}
+                                  className={`w-5.5 h-7.5 sm:w-6.5 sm:h-8 rounded-lg flex items-center justify-center font-mono font-black text-xs transition-all shadow-xs ${
+                                    isMatch
+                                      ? 'bg-emerald-500 text-white shadow-emerald-500/20 ring-1 ring-emerald-400'
+                                      : isError
+                                      ? 'bg-rose-500 text-white ring-2 ring-rose-400 animate-pulse'
+                                      : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600'
+                                  }`}
+                                >
+                                  {isTyped ? (userChar || char) : '_'}
+                                </div>
+                              );
+                            })}
                           </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* WRONG ANSWER HINT BANNER WITH 3-SECOND AUTO-HIDE & ANTI-COPY-PASTE PROTECTION */}
-                    {!isCorrect && showWrongHint && (
-                      <div className="w-full max-w-3xl mx-auto p-4 rounded-2xl flex items-center gap-3 border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-md animate-in fade-in zoom-in-95 duration-150">
-                        <XCircle className="w-6 h-6 shrink-0 text-rose-500" />
-                        
-                        {/* ANTI-COPY-PASTE & UNSELECTABLE CONTAINER */}
-                        <div 
-                          className="flex-1 select-none pointer-events-none"
-                          style={{
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none',
-                            MozUserSelect: 'none',
-                            msUserSelect: 'none'
-                          }}
-                          onCopy={e => e.preventDefault()}
-                          onCut={e => e.preventDefault()}
-                          onContextMenu={e => e.preventDefault()}
-                        >
-                          <div className="font-black text-sm">
-                            Chưa chính xác. Đáp án đúng: <span className="font-mono font-black underline tracking-wide">"{currentItem.text}"</span>
-                          </div>
-                          <div className="text-xs font-bold opacity-80 mt-0.5 flex items-center gap-1">
-                            <EyeOff className="w-3.5 h-3.5 text-rose-400" />
-                            <span>Gợi ý sẽ tự động ẩn sau 3 giây để bạn nhớ lại & gõ lại!</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SRS SM-2 GRADING BUTTONS WHEN CORRECT */}
-                    {isCorrect && (
-                      <div className="space-y-2">
-                        <div className="text-xs font-black text-slate-500 dark:text-slate-400 text-center uppercase tracking-wider">
-                          Đánh giá mức độ thuộc (Spaced Repetition SM-2)
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleSrsGrade('again')}
-                            className="py-2.5 rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          >
-                            Chưa thuộc (Again)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSrsGrade('hard')}
-                            className="py-2.5 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          >
-                            Hơi khó (Hard)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSrsGrade('good')}
-                            className="py-2.5 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          >
-                            Khá tốt (Good)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSrsGrade('easy')}
-                            className="py-2.5 rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          >
-                            Rất dễ (Easy)
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
-              </form>
+
+                  {/* SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
+                  <form onSubmit={handleSubmitSpelling} className="w-full space-y-2.5">
+                    <div className="relative">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        autoFocus
+                        disabled={isAnswered && isCorrect}
+                        value={userInput}
+                        onChange={e => setUserInput(e.target.value)}
+                        placeholder={
+                          isRetrying
+                            ? "Sửa lại vị trí bị sai..."
+                            : "Nhập lại chính tả tiếng Anh bạn nghe được..."
+                        }
+                        className={`w-full px-3.5 py-2.5 text-center text-sm sm:text-base font-black rounded-xl border-2 transition-all focus:outline-none ${
+                          isAnswered
+                            ? isCorrect
+                              ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-100'
+                              : 'border-rose-500 bg-rose-50/50 text-rose-900 dark:bg-rose-950/50 dark:text-rose-100'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:border-emerald-500'
+                        }`}
+                      />
+                    </div>
+
+                    {!isAnswered ? (
+                      <button
+                        type="submit"
+                        disabled={!userInput.trim()}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        Kiểm Tra Đáp Án
+                      </button>
+                    ) : (
+                      <div className="space-y-3 animate-in fade-in duration-200">
+                        
+                        {/* CORRECT FEEDBACK BANNER */}
+                        {isCorrect && (
+                          <div className="p-3 rounded-xl flex items-center gap-2.5 border bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                            <CheckCircle2 className="w-5 h-5 shrink-0" />
+                            <div>
+                              <div className="font-black text-xs">Chính xác! Bạn làm rất tốt!</div>
+                              <div className="text-[11px] opacity-80">
+                                Nghĩa Tiếng Việt: {currentItem.vi}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* WRONG ANSWER HINT BANNER WITH 3-SECOND AUTO-HIDE */}
+                        {!isCorrect && showWrongHint && (
+                          <div className="w-full p-3 rounded-xl flex items-center gap-2.5 border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-sm animate-in fade-in zoom-in-95 duration-150">
+                            <XCircle className="w-5 h-5 shrink-0 text-rose-500" />
+                            
+                            <div 
+                              className="flex-1 select-none pointer-events-none"
+                              style={{
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none'
+                              }}
+                              onCopy={e => e.preventDefault()}
+                              onCut={e => e.preventDefault()}
+                              onContextMenu={e => e.preventDefault()}
+                            >
+                              <div className="font-black text-xs">
+                                Chưa chính xác. Đáp án đúng: <span className="font-mono font-black underline tracking-wide">"{currentItem.text}"</span>
+                              </div>
+                              <div className="text-[10px] font-bold opacity-80 mt-0.5 flex items-center gap-1">
+                                <EyeOff className="w-3 h-3 text-rose-400" />
+                                <span>Gợi ý sẽ tự động ẩn sau 3 giây!</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SRS SM-2 GRADING BUTTONS WHEN CORRECT */}
+                        {isCorrect && (
+                          <div className="space-y-1.5">
+                            <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 text-center uppercase tracking-wider">
+                              Đánh giá mức độ thuộc (Spaced Repetition SM-2)
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSrsGrade('again')}
+                                className="py-2 rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-black text-[11px] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              >
+                                Chưa thuộc (Again)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSrsGrade('hard')}
+                                className="py-2 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-black text-[11px] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              >
+                                Hơi khó (Hard)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSrsGrade('good')}
+                                className="py-2 rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-black text-[11px] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              >
+                                Khá tốt (Good)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSrsGrade('easy')}
+                                className="py-2 rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 font-black text-[11px] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              >
+                                Rất dễ (Easy)
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+                  </form>
+
+                </div>
+              </div>
             </div>
           )}
         </main>

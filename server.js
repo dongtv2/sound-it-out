@@ -68,17 +68,17 @@ db.exec(`
   );
 `);
 
-// Seed Family Users if empty
-const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-if (userCount === 0) {
-  const insertUser = db.prepare(`
+// Clean up old dummy users if present
+db.prepare("DELETE FROM users WHERE email IN ('student@metta.family', 'teacher@metta.family', 'parent@metta.family')").run();
+
+// Ensure active real family accounts exist
+const checkUserExist = db.prepare('SELECT COUNT(*) as count FROM users WHERE email = ?');
+
+if (checkUserExist.get('admin@metta.family').count === 0) {
+  db.prepare(`
     INSERT INTO users (uid, displayName, email, password, role, isSuperuser, isStaff, userPermissions, avatarUrl, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const now = Date.now();
-  // Admin (God-Mode)
-  insertUser.run(
+  `).run(
     'adm-999',
     'Admin Sound It Out',
     'admin@metta.family',
@@ -88,54 +88,9 @@ if (userCount === 0) {
     1,
     JSON.stringify(['*']),
     'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=adm999',
-    now
-  );
-
-  // Student (Bé Mai)
-  insertUser.run(
-    'stu-101',
-    'Bé Mai',
-    'student@metta.family',
-    'Dong1984@',
-    'student',
-    0,
-    0,
-    JSON.stringify(['content.view_list']),
-    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=stu101',
-    now
-  );
-
-  // Teacher (Cô Hương)
-  insertUser.run(
-    'tch-202',
-    'Cô Hương',
-    'teacher@metta.family',
-    'Dong1984@',
-    'teacher',
-    0,
-    1,
-    JSON.stringify(['content.add_list', 'content.change_list', 'reports.view_studentreport']),
-    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=tch202',
-    now
-  );
-
-  // Parent (Bố Tuấn)
-  insertUser.run(
-    'prt-303',
-    'Bố Tuấn',
-    'parent@metta.family',
-    'Dong1984@',
-    'parent',
-    0,
-    0,
-    JSON.stringify(['reports.view_studentreport']),
-    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=prt303',
-    now
+    Date.now()
   );
 }
-
-// Ensure specific requested accounts exist (phuctri@metta.family & maianh@metta.family)
-const checkUserExist = db.prepare('SELECT COUNT(*) as count FROM users WHERE email = ?');
 
 if (checkUserExist.get('phuctri@metta.family').count === 0) {
   db.prepare(`
@@ -218,16 +173,68 @@ if (listCount === 0) {
     'list-phonics-vowels',
     'Phonics: Vowel Sounds',
     'words',
-    '',
-    'admin',
+    'Tất cả',
+    'teacher',
     JSON.stringify([
       { id: 'pv-1', text: 'cat', vi: 'con mèo' },
-      { id: 'pv-2', text: 'rain', vi: 'cơn mưa' },
-      { id: 'pv-3', text: 'night', vi: 'ban đêm' },
-      { id: 'pv-4', text: 'boat', vi: 'con thuyền' }
+      { id: 'pv-2', text: 'bed', vi: 'cái giường' },
+      { id: 'pv-3', text: 'pig', vi: 'con heo' },
+      { id: 'pv-4', text: 'sun', vi: 'mặt trời' }
     ]),
     now,
     now
+  );
+}
+
+// Ensure Counting Stars song lesson exists
+const checkListExist = db.prepare('SELECT COUNT(*) as count FROM practice_lists WHERE id = ?');
+if (checkListExist.get('list-counting-star').count === 0) {
+  const countingStarsItems = [
+    { id: "cs-1", text: "Lately, I've been, I've been losing sleep", vi: "Dạo này tôi bị mất ngủ" },
+    { id: "cs-2", text: "Dreaming about the things that we could be", vi: "Mơ về những điều chúng ta có thể trở thành" },
+    { id: "cs-3", text: "But baby, I've been, I've been praying hard", vi: "Nhưng em yêu, tôi đã cầu nguyện rất nhiều" },
+    { id: "cs-4", text: "Sitting, no more counting dollars", vi: "Ngồi đây, không còn đếm tiền bạc nữa" },
+    { id: "cs-5", text: "We'll be counting stars", vi: "Chúng ta sẽ đếm những vì sao" },
+    { id: "cs-6", text: "Yeah, we'll be counting stars", vi: "Vâng, chúng ta sẽ đếm những vì sao" },
+    { id: "cs-7", text: "I see this life like a swinging vine", vi: "Tôi thấy cuộc đời như một cành dây leo đung đưa" },
+    { id: "cs-8", text: "Swing my heart across the line", vi: "Đưa trái tim tôi vượt qua ranh giới" },
+    { id: "cs-9", text: "And my face is flashing signs", vi: "Và khuôn mặt tôi bừng sáng những tín hiệu" },
+    { id: "cs-10", text: "Seek it out and you shall find", vi: "Hãy tìm kiếm rồi bạn sẽ thấy" },
+    { id: "cs-11", text: "Old, but I'm not that old", vi: "Già rồi, nhưng tôi chưa già đến thế" },
+    { id: "cs-12", text: "Young, but I'm not that bold", vi: "Trẻ trung, nhưng tôi không quá táo bạo" },
+    { id: "cs-13", text: "I don't think the world is sold", vi: "Tôi không nghĩ thế giới này đã bị bán đứng" },
+    { id: "cs-14", text: "I'm just doing what we're told", vi: "Tôi chỉ đang làm những gì được bảo" },
+    { id: "cs-15", text: "I feel something so right", vi: "Tôi cảm thấy một điều thật đúng đắn" },
+    { id: "cs-16", text: "Doing the wrong thing", vi: "Khi làm một điều sai trái" },
+    { id: "cs-17", text: "I feel something so wrong", vi: "Tôi cảm thấy một điều thật sai trái" },
+    { id: "cs-18", text: "Doing the right thing", vi: "Khi làm một điều đúng đắn" },
+    { id: "cs-19", text: "I couldn't lie, couldn't lie, couldn't lie", vi: "Tôi không thể nói dối, không thể nói dối" },
+    { id: "cs-20", text: "Everything that kills me makes me feel alive", vi: "Mọi thứ dằn xé tôi lại khiến tôi cảm thấy mình đang sống" },
+    { id: "cs-21", text: "I feel the love and I feel it burn", vi: "Tôi cảm nhận tình yêu và cảm thấy nó rực cháy" },
+    { id: "cs-22", text: "Down this river, every turn", vi: "Xuôi theo dòng sông này, qua từng khúc ngoặt" },
+    { id: "cs-23", text: "Hope is a four-letter word", vi: "Hy vọng là một từ bốn chữ cái" },
+    { id: "cs-24", text: "Make that money, watch it burn", vi: "Kiếm tiền ra rồi nhìn nó tan biến" },
+    { id: "cs-25", text: "Everything that downs me makes me wanna fly", vi: "Mọi thứ kéo tôi xuống lại khiến tôi muốn bay lên" },
+    { id: "cs-26", text: "Take that money", vi: "Hãy cầm lấy số tiền đó" },
+    { id: "cs-27", text: "Watch it burn", vi: "Nhìn nó bùng cháy" },
+    { id: "cs-28", text: "Sink in the river", vi: "Chìm xuống dòng sông" },
+    { id: "cs-29", text: "The lessons are learnt", vi: "Những bài học đã được rút ra" },
+    { id: "cs-30", text: "Everything that kills me", vi: "Mọi thứ dằn xé tôi" },
+    { id: "cs-31", text: "Makes feel alive", vi: "Khiến tôi cảm thấy mình sống động" }
+  ];
+
+  db.prepare(`
+    INSERT INTO practice_lists (id, name, type, learner, by, items, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'list-counting-star',
+    'Bài hát - Counting star',
+    'sentences',
+    'Bé Phúc Trí',
+    'maianh@metta.family',
+    JSON.stringify(countingStarsItems),
+    Date.now(),
+    Date.now()
   );
 }
 

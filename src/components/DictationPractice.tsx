@@ -109,11 +109,11 @@ export const DictationPractice: React.FC = () => {
 
   const handleSubmitSpelling = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isAnswered || !userInput.trim()) return;
+    if (!userInput.trim()) return;
 
-    const target = currentItem.text.trim().toLowerCase();
-    const input = userInput.trim().toLowerCase();
-    const correct = target === input;
+    const target = currentItem.text.trim();
+    const input = userInput.trim();
+    const correct = target.toLowerCase() === input.toLowerCase();
 
     setIsAnswered(true);
     setIsCorrect(correct);
@@ -128,12 +128,24 @@ export const DictationPractice: React.FC = () => {
       setStreak(0);
       setShowWrongHint(true);
 
-      // Auto-hide wrong answer hint after 3 seconds to prompt recall memory!
+      // Find longest matching prefix to avoid typing from scratch
+      let matchLen = 0;
+      while (
+        matchLen < input.length &&
+        matchLen < target.length &&
+        input[matchLen].toLowerCase() === target[matchLen].toLowerCase()
+      ) {
+        matchLen++;
+      }
+
+      const correctPrefix = userInput.slice(0, matchLen);
+
+      // Auto-hide wrong answer hint after 3 seconds, preserving the correct prefix!
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       hideTimerRef.current = setTimeout(() => {
         setShowWrongHint(false);
-        setUserInput('');
-        setIsAnswered(false); // Enable input for re-typing from memory!
+        setUserInput(correctPrefix); // Keep correct prefix intact!
+        setIsAnswered(false); // Enable input to fix from error!
         setIsRetrying(true);
         if (inputRef.current) {
           inputRef.current.focus();
@@ -442,6 +454,51 @@ export const DictationPractice: React.FC = () => {
                 </div>
               </div>
 
+              {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
+              <div className="w-full max-w-xl mx-auto p-4 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-2">
+                <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider text-center flex items-center justify-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Cấu Trúc Ký Tự Cần Gõ ({currentItem.text.split(' ').map(w => '_'.repeat(w.length)).join('  ')})</span>
+                </div>
+                
+                {/* Letter Slots */}
+                <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-3.5 py-1">
+                  {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {
+                    let wordStartCharIdx = 0;
+                    for (let w = 0; w < wordIdx; w++) {
+                      wordStartCharIdx += wordArr[w].length + 1; // +1 for space
+                    }
+
+                    return (
+                      <div key={wordIdx} className="flex items-center gap-1">
+                        {word.split('').map((char, charIdx) => {
+                          const globalIdx = wordStartCharIdx + charIdx;
+                          const isTyped = globalIdx < userInput.length;
+                          const userChar = userInput[globalIdx];
+                          const isMatch = isTyped && userChar && userChar.toLowerCase() === char.toLowerCase();
+                          const isError = isTyped && !isMatch;
+
+                          return (
+                            <div
+                              key={charIdx}
+                              className={`w-7 h-9 rounded-lg flex items-center justify-center font-mono font-black text-sm transition-all shadow-xs ${
+                                isMatch
+                                  ? 'bg-emerald-500 text-white shadow-emerald-500/20 ring-1 ring-emerald-400'
+                                  : isError
+                                  ? 'bg-rose-500 text-white ring-2 ring-rose-400 animate-pulse'
+                                  : 'bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600'
+                              }`}
+                            >
+                              {isTyped ? (userChar || char) : '_'}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* EXPANDED SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
               <form onSubmit={handleSubmitSpelling} className="w-full max-w-xl mx-auto space-y-4">
                 <div className="relative">
@@ -454,7 +511,7 @@ export const DictationPractice: React.FC = () => {
                     onChange={e => setUserInput(e.target.value)}
                     placeholder={
                       isRetrying
-                        ? "Gõ lại từ/câu bạn vừa nhớ từ gợi ý..."
+                        ? "Sửa lại vị trí bị sai (phần gõ đúng đã được giữ nguyên)..."
                         : "Nhập lại chính tả tiếng Anh bạn nghe được..."
                     }
                     className={`w-full px-5 py-4 text-center text-lg font-black rounded-2xl border-2 transition-all focus:outline-none ${

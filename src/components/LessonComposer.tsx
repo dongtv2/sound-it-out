@@ -50,7 +50,7 @@ export const LessonComposer: React.FC = () => {
   const [listName, setListName] = useState('');
   const [listType, setListType] = useState<PracticeItemType>('words');
   const [listTag, setListTag] = useState<string>('curriculum');
-  const [assignLearner, setAssignLearner] = useState('Bé Phúc Trí');
+  const [selectedLearners, setSelectedLearners] = useState<string[]>(['Bé Phúc Trí']);
   const [rawText, setRawText] = useState('');
   const [stagedItems, setStagedItems] = useState<PracticeItem[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -61,8 +61,15 @@ export const LessonComposer: React.FC = () => {
     return lists.reduce((acc, l) => acc + (l.items?.length || 0), 0);
   }, [lists]);
 
+  // Helper to check if a lesson is explicitly assigned to specific students (excluding "Tất cả")
+  const isAssignedList = (learnerStr?: string) => {
+    if (!learnerStr) return false;
+    const clean = learnerStr.trim().toLowerCase();
+    return clean.length > 0 && clean !== 'tất cả' && clean !== 'all';
+  };
+
   const assignedListsCount = useMemo(() => {
-    return lists.filter(l => Boolean(l.learner && l.learner.trim())).length;
+    return lists.filter(l => isAssignedList(l.learner)).length;
   }, [lists]);
 
   const wordListsCount = useMemo(() => {
@@ -193,7 +200,7 @@ export const LessonComposer: React.FC = () => {
       if (!matchesSearch) return false;
       if (filterCategory !== 'all') {
         if (filterCategory === 'assigned') {
-          return Boolean(l.learner && l.learner.trim());
+          return isAssignedList(l.learner);
         }
         return l.tag === filterCategory || (filterCategory === '3000words' && (l.id.includes('langmaster') || l.name.startsWith('3000 words:')));
       }
@@ -208,7 +215,7 @@ export const LessonComposer: React.FC = () => {
     setListName('');
     setListType('words');
     setListTag(categories[0]?.slug || 'curriculum');
-    setAssignLearner('Bé Phúc Trí');
+    setSelectedLearners(['Bé Phúc Trí']);
     setRawText('');
     setStagedItems([]);
     setIsFormOpen(true);
@@ -220,7 +227,12 @@ export const LessonComposer: React.FC = () => {
     setListName(list.name);
     setListType(list.type);
     setListTag(list.tag || categories[0]?.slug || 'curriculum');
-    setAssignLearner(list.learner || '');
+    
+    const parsedLearners = list.learner
+      ? list.learner.split(',').map(s => s.trim()).filter(s => s && isAssignedList(s))
+      : [];
+    setSelectedLearners(parsedLearners);
+
     setStagedItems(list.items || []);
     setRawText('');
     setIsFormOpen(true);
@@ -328,7 +340,7 @@ export const LessonComposer: React.FC = () => {
       name: listName.trim(),
       type: listType,
       tag: listTag,
-      learner: assignLearner.trim(),
+      learner: selectedLearners.join(', '),
       by: user?.displayName || 'teacher',
       items: validItems,
       createdAt: Date.now(),
@@ -529,9 +541,9 @@ export const LessonComposer: React.FC = () => {
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                               {tag}
                             </span>
-                            {l.learner && l.learner.trim() && (
+                            {isAssignedList(l.learner) && (
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200 flex items-center gap-1">
-                                👤 {l.learner}
+                                👥 Giao: {l.learner}
                               </span>
                             )}
                           </div>
@@ -848,28 +860,59 @@ export const LessonComposer: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <UserCheck className="w-4 h-4 text-cyan-500" />
-                      <span>Giao bài cho học sinh cụ thể (SQLite)</span>
+                      <span>Giao bài cho học sinh cụ thể (Chọn 1 hoặc nhiều học sinh)</span>
+                    </label>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      {selectedLearners.length === 0 ? 'Chưa giao riêng (Bài chung cho tất cả)' : `Đã chọn (${selectedLearners.length} học sinh)`}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      ({familyUsers.length} tài khoản trong DB)
-                    </span>
-                  </label>
-                  <select
-                    value={assignLearner}
-                    onChange={e => setAssignLearner(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                  >
-                    <option value="">-- Tất cả học sinh (Mặc định) --</option>
-                    {familyUsers.map(u => (
-                      <option key={u.uid} value={u.displayName}>
-                        {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
-                      </option>
-                    ))}
-                  </select>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 items-center min-h-[48px]">
+                    {familyUsers.map(u => {
+                      const isSelected = selectedLearners.includes(u.displayName);
+
+                      return (
+                        <button
+                          key={u.uid}
+                          type="button"
+                          onClick={() => {
+                            soundEffects.playPop();
+                            setSelectedLearners(prev => 
+                              isSelected
+                                ? prev.filter(name => name !== u.displayName)
+                                : [...prev, u.displayName]
+                            );
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                            isSelected
+                              ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white border-cyan-600 shadow-sm ring-2 ring-cyan-500/30'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-cyan-500'
+                          }`}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{u.displayName}</span>
+                          <span className="text-[9px] opacity-75">({u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})</span>
+                        </button>
+                      );
+                    })}
+
+                    {selectedLearners.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundEffects.playPop();
+                          setSelectedLearners([]);
+                        }}
+                        className="text-[11px] font-bold text-rose-500 hover:underline px-2 py-1 ml-auto cursor-pointer"
+                      >
+                        ✕ Bỏ chọn tất cả (Bài chung)
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

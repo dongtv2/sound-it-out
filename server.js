@@ -332,16 +332,33 @@ app.post('/api/users', (req, res) => {
 
 app.put('/api/users/:uid', (req, res) => {
   const { uid } = req.params;
-  const { displayName, role, isSuperuser, isStaff, userPermissions, password } = req.body;
+  try {
+    const existingUser = db.prepare('SELECT * FROM users WHERE uid = ?').get(uid);
 
-  if (password) {
-    db.prepare('UPDATE users SET displayName = ?, role = ?, isSuperuser = ?, isStaff = ?, userPermissions = ?, password = ? WHERE uid = ?')
-      .run(displayName, role, isSuperuser ? 1 : 0, isStaff ? 1 : 0, JSON.stringify(userPermissions || []), password, uid);
-  } else {
-    db.prepare('UPDATE users SET displayName = ?, role = ?, isSuperuser = ?, isStaff = ?, userPermissions = ? WHERE uid = ?')
-      .run(displayName, role, isSuperuser ? 1 : 0, isStaff ? 1 : 0, JSON.stringify(userPermissions || []), uid);
+    if (!existingUser) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng!' });
+    }
+
+    const displayName = req.body.displayName !== undefined ? req.body.displayName : existingUser.displayName;
+    const role = req.body.role !== undefined ? req.body.role : existingUser.role;
+    const isSuperuser = req.body.isSuperuser !== undefined ? (req.body.isSuperuser ? 1 : 0) : existingUser.isSuperuser;
+    const isStaff = req.body.isStaff !== undefined ? (req.body.isStaff ? 1 : 0) : existingUser.isStaff;
+    const userPermissions = req.body.userPermissions !== undefined 
+      ? (typeof req.body.userPermissions === 'string' ? req.body.userPermissions : JSON.stringify(req.body.userPermissions)) 
+      : existingUser.userPermissions;
+    const password = req.body.password !== undefined ? req.body.password : existingUser.password;
+
+    db.prepare(`
+      UPDATE users 
+      SET displayName = ?, role = ?, isSuperuser = ?, isStaff = ?, userPermissions = ?, password = ? 
+      WHERE uid = ?
+    `).run(displayName, role, isSuperuser, isStaff, userPermissions, password, uid);
+
+    res.json({ success: true, message: 'Cập nhật tài khoản thành công!' });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ success: false, error: 'Lỗi cập nhật CSDL: ' + err.message });
   }
-  res.json({ success: true });
 });
 
 app.delete('/api/users/:uid', (req, res) => {

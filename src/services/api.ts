@@ -66,16 +66,21 @@ export const api = {
   },
 
   async updateUser(uid: string, user: Partial<UserProfile> & { password?: string }): Promise<boolean> {
-    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(uid)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user)
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Cập nhật tài khoản thất bại');
+    try {
+      const res = await fetch(`${API_BASE}/users/${encodeURIComponent(uid)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      });
+      const data = await res.json().catch(() => ({ success: false, error: 'Máy chủ trả về phản hồi không phải JSON' }));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Cập nhật tài khoản thất bại');
+      }
+      return true;
+    } catch (err: any) {
+      console.error('API updateUser error:', err);
+      throw new Error(err.message || 'Lỗi kết nối máy chủ');
     }
-    return true;
   },
 
   async deleteUser(uid: string): Promise<boolean> {

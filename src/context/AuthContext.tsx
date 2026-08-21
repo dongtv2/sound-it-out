@@ -35,9 +35,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [familyUsers, setFamilyUsers] = useState<UserProfile[]>([]);
 
   const fetchFamilyUsers = async () => {
-    if (user?.role === 'admin' || user?.isSuperuser) {
-      const users = await api.getUsers();
-      setFamilyUsers(users);
+    if (user) {
+      try {
+        const users = await api.getUsers();
+        setFamilyUsers(users);
+      } catch (e) {
+        console.warn('Lỗi lấy danh sách người dùng:', e);
+      }
     }
   };
 

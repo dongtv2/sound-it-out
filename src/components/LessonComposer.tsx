@@ -19,12 +19,12 @@ import {
 
 export const LessonComposer: React.FC = () => {
   const { lists, addList, updateList, deleteList, translateTextMyMemory, splitTextToPhrases } = usePractice();
-  const { user } = useAuth();
+  const { user, familyUsers } = useAuth();
 
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [listName, setListName] = useState('');
   const [listType, setListType] = useState<PracticeItemType>('words');
-  const [assignLearner, setAssignLearner] = useState('Bé Mai');
+  const [assignLearner, setAssignLearner] = useState('Bé Phúc Trí');
   const [rawText, setRawText] = useState('');
   const [stagedItems, setStagedItems] = useState<PracticeItem[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -35,7 +35,7 @@ export const LessonComposer: React.FC = () => {
     setEditingListId(null);
     setListName('');
     setListType('words');
-    setAssignLearner('Bé Mai');
+    setAssignLearner('Bé Phúc Trí');
     setRawText('');
     setStagedItems([]);
   };
@@ -281,17 +281,27 @@ export const LessonComposer: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-cyan-500" />
-                  <span>Giao bài cho học sinh cụ thể</span>
+                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-cyan-500" />
+                    <span>Giao bài cho học sinh cụ thể (Lấy từ CSDL SQLite)</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    ({familyUsers.length} tài khoản trong DB)
+                  </span>
                 </label>
-                <input
-                  type="text"
+                <select
                   value={assignLearner}
                   onChange={e => setAssignLearner(e.target.value)}
-                  placeholder="Ví dụ: Bé Mai, Bé Bi, hoặc để trống cho tất cả"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value="">-- Tất cả học sinh (Để trống cho tất cả mọi người) --</option>
+                  {familyUsers.map(u => (
+                    <option key={u.uid} value={u.displayName}>
+                      {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

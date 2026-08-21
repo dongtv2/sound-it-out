@@ -538,7 +538,7 @@ export const LessonComposer: React.FC = () => {
               )}
             </div>
 
-            {/* Form Top Metadata Fields */}
+            {/* Form Top Metadata Fields (Clean 2x2 Grid) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Tên bài học</label>
@@ -564,7 +564,7 @@ export const LessonComposer: React.FC = () => {
                 </select>
               </div>
 
-              <div className="sm:col-span-2">
+              <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-black text-slate-700 dark:text-slate-300">Phân loại bài học (Category Tag)</label>
                   <button 
@@ -586,11 +586,11 @@ export const LessonComposer: React.FC = () => {
                 </select>
               </div>
 
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <UserCheck className="w-4 h-4 text-cyan-500" />
-                    <span>Giao bài cho học sinh cụ thể (Lấy từ CSDL SQLite)</span>
+                    <span>Giao bài cho học sinh cụ thể (SQLite)</span>
                   </span>
                   <span className="text-[10px] font-bold text-slate-400">
                     ({familyUsers.length} tài khoản trong DB)
@@ -601,7 +601,7 @@ export const LessonComposer: React.FC = () => {
                   onChange={e => setAssignLearner(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                 >
-                  <option value="">-- Tất cả học sinh (Để trống cho tất cả mọi người) --</option>
+                  <option value="">-- Tất cả học sinh (Mặc định) --</option>
                   {familyUsers.map(u => (
                     <option key={u.uid} value={u.displayName}>
                       {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
@@ -611,7 +611,7 @@ export const LessonComposer: React.FC = () => {
               </div>
             </div>
 
-            {/* SUB-TABS: TAB 1 (NHẬP VĂN BẢN) vs TAB 2 (UPLOAD RẤT NHIỀU ẢNH MAX 10) */}
+            {/* SUB-TABS: NHẬP VĂN BẢN vs UPLOAD RẤT NHIỀU ẢNH MAX 10 */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               
               {/* Tab Selector Headers */}
@@ -626,7 +626,7 @@ export const LessonComposer: React.FC = () => {
                   }`}
                 >
                   <FileText className="w-4 h-4" />
-                  <span>TAB 1: Nhập Nhanh Văn Bản (Tách câu & Dịch MyMemory)</span>
+                  <span>Nhập Nhanh Văn Bản (Tách câu & Dịch MyMemory)</span>
                 </button>
 
                 <button
@@ -639,7 +639,7 @@ export const LessonComposer: React.FC = () => {
                   }`}
                 >
                   <UploadCloud className="w-4 h-4" />
-                  <span>TAB 2: Upload / Drag Drop Nhiều Ảnh (Tối đa 10 hình)</span>
+                  <span>Upload / Drag Drop Nhiều Ảnh (Tối đa 10 hình)</span>
                   {uploadedImages.length > 0 && (
                     <span className="px-2 py-0.5 text-[10px] bg-amber-400 text-slate-950 rounded-full font-mono font-bold">
                       {uploadedImages.length}

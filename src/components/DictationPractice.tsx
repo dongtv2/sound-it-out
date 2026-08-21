@@ -432,21 +432,9 @@ export const DictationPractice: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-center">
                 
                 {/* LEFT COLUMN: AUDIO PLAYER & IMAGE THUMBNAIL (md:col-span-5) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center space-y-2.5 text-center p-3 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80">
+                <div className="md:col-span-5 flex flex-col items-center justify-center space-y-3 text-center p-3 sm:p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 h-full">
                   
-                  {/* Image Illustration if available and valid */}
-                  {currentItem.imageUrl && !imgError && (
-                    <div className="w-full h-28 sm:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
-                      <img 
-                        src={currentItem.imageUrl} 
-                        alt={currentItem.text} 
-                        className="w-full h-full object-cover" 
-                        onError={() => setImgError(true)}
-                      />
-                    </div>
-                  )}
-
-                  {/* Audio Controls Box */}
+                  {/* Audio Controls Box (Moved to Top) */}
                   <div className="flex items-center gap-3 py-1">
                     <button
                       type="button"
@@ -477,6 +465,18 @@ export const DictationPractice: React.FC = () => {
                       </select>
                     </div>
                   </div>
+
+                  {/* Image Illustration (Below Audio Button with Proportional Height) */}
+                  {currentItem.imageUrl && !imgError && (
+                    <div className="w-full h-36 sm:h-40 md:h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs bg-slate-100 dark:bg-slate-900">
+                      <img 
+                        src={currentItem.imageUrl} 
+                        alt={currentItem.text} 
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                        onError={() => setImgError(true)}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* RIGHT COLUMN: MEANING, WORD SLOTS & SPELLING INPUT (md:col-span-7) */}

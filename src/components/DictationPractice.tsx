@@ -313,37 +313,6 @@ export const DictationPractice: React.FC = () => {
         {/* CENTER MAIN WORKSPACE */}
         <main className="lg:col-span-6 space-y-3.5">
           
-          {/* TOP AUTOMATED SM-2 SMART REVIEW BANNER */}
-          {reviewItems.length > 0 && (
-            <div 
-              onClick={() => {
-                soundEffects.playPop();
-                setActiveListId('srs-review-pool');
-                setCurrentIndex(0);
-              }}
-              className="bg-gradient-to-r from-amber-500 via-emerald-600 to-teal-600 p-3 sm:p-3.5 rounded-2xl text-white shadow-md flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-all group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
-                  <Zap className="w-5 h-5 text-amber-200 animate-pulse" />
-                </div>
-                <div>
-                  <div className="font-black text-xs uppercase tracking-wider text-amber-100 flex items-center gap-2">
-                    <span>🔥 Ôn Tập Thông Minh SM-2 Tự Động</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white/30 text-white text-[9px]">Auto Queue</span>
-                  </div>
-                  <div className="text-[11px] font-bold text-white/90 mt-0.5">
-                    Hệ thống đã tự động gom {reviewItems.length} từ cần ôn hôm nay cho bạn!
-                  </div>
-                </div>
-              </div>
-
-              <button className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 font-black text-xs shadow-xs group-hover:bg-amber-100 transition-colors flex items-center gap-1 shrink-0">
-                <span>Ôn Ngay ({reviewItems.length})</span>
-              </button>
-            </div>
-          )}
-
           {/* Top Bar Stats */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
             <div className="flex items-center gap-2 min-w-0">
@@ -363,6 +332,21 @@ export const DictationPractice: React.FC = () => {
                 <Trophy className="w-3.5 h-3.5" />
                 <span>Thuộc: {completedCount}</span>
               </div>
+
+              {reviewItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEffects.playPop();
+                    setActiveListId('srs-review-pool');
+                    setCurrentIndex(0);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-emerald-500 text-white font-black text-[11px] shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer animate-pulse"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-white" />
+                  <span>Ôn Ngay ({reviewItems.length})</span>
+                </button>
+              )}
             </div>
           </div>
 

@@ -99,7 +99,7 @@ export const AdminPortal: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs font-bold text-purple-200/80 mt-1">
-                Quản lý tài khoản gia đình, phân quyền RBAC, cấu hình domain sound-it-out.metta.family & CSDL SQLite
+                Quản lý tài khoản gia đình, phân quyền RBAC, cấu hình hệ thống sound-it-out.metta.family
               </p>
             </div>
           </div>

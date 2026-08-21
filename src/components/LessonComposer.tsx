@@ -352,7 +352,7 @@ export const LessonComposer: React.FC = () => {
       setSuccessMessage('Đã cập nhật bài học thành công!');
     } else {
       await addList(listPayload);
-      setSuccessMessage('Đã tạo bài học mới và lưu vào CSDL SQLite!');
+      setSuccessMessage('Đã tạo bài học mới thành công!');
     }
 
     soundEffects.playSuccess();
@@ -387,7 +387,7 @@ export const LessonComposer: React.FC = () => {
               <button onClick={() => setIsCatModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xs">✕</button>
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              <div className="text-[11px] font-bold text-slate-400">Danh mục trong SQLite:</div>
+              <div className="text-[11px] font-bold text-slate-400">Danh mục bài học:</div>
               {categories.map(c => (
                 <div key={c.id} className="flex items-center justify-between p-2 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
                   <span className="text-xs font-bold text-slate-900 dark:text-white">{c.name} ({c.slug})</span>
@@ -559,7 +559,7 @@ export const LessonComposer: React.FC = () => {
                           </button>
                           <button 
                             onClick={() => {
-                              if (confirm(`Bạn có chắc chắn muốn xoá bài học "${cleanName}" khỏi CSDL?`)) {
+                              if (confirm(`Bạn có chắc chắn muốn xoá bài học "${cleanName}"?`)) {
                                 deleteList(l.id);
                               }
                             }} 
@@ -595,7 +595,7 @@ export const LessonComposer: React.FC = () => {
                     Kho Bài Học & Giao Bài Thông Minh
                   </h1>
                   <p className="text-xs font-medium text-emerald-100 max-w-xl leading-relaxed">
-                    Tổng quan toàn bộ CSDL bài học SQLite, theo dõi tiến độ giao bài và thống kê chủ đề học tập gia đình.
+                    Tổng quan kho bài học, theo dõi tiến độ giao bài và thống kê chủ đề học tập gia đình.
                   </p>
                 </div>
 
@@ -797,7 +797,7 @@ export const LessonComposer: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-emerald-500" />
-                  <span>{editingListId ? 'Chỉnh Sửa Bài Học SQLite' : 'Soạn Bài Học Mới'}</span>
+                  <span>{editingListId ? 'Chỉnh Sửa Bài Học' : 'Soạn Bài Học Mới'}</span>
                 </h2>
                 <button
                   type="button"
@@ -1219,7 +1219,7 @@ export const LessonComposer: React.FC = () => {
                   className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" /> 
-                  <span>{editingListId ? 'Lưu Cập Nhật Bài Học' : 'Lưu Bài Học Vào SQLite DB'}</span>
+                  <span>{editingListId ? 'Lưu Cập Nhật Bài Học' : 'Lưu Bài Học Mới'}</span>
                 </button>
               </div>
             </form>

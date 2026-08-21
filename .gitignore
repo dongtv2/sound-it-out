@@ -16,6 +16,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# MCP Configs & Secrets
+mcp_config.json
+.agents/mcp_config.json
+
 # OS & Editor
 .DS_Store
 *.suo

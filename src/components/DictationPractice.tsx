@@ -16,6 +16,7 @@ import {
   Sparkles,
   UserCheck,
   Clock,
+  Eye,
   EyeOff,
   Search,
   X,
@@ -38,6 +39,9 @@ export const DictationPractice: React.FC = () => {
   // Search & Filter State in Aside Left
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+
+  // SRS Answer Locking State (Hide English text in Aside Right to prevent cheating during practice)
+  const [hideSrsAnswers, setHideSrsAnswers] = useState(true);
 
   // Sidebar Toggle States for Focus Mode
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -781,6 +785,33 @@ export const DictationPractice: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Toggle Lock Answers Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEffects.playPop();
+                      setHideSrsAnswers(!hideSrsAnswers);
+                    }}
+                    title={hideSrsAnswers ? "Khóa tiếng Anh để không lộ đáp án khi luyện (Click để hiện)" : "Hiện tiếng Anh (Click để khóa)"}
+                    className={`px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer border ${
+                      hideSrsAnswers
+                        ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800 shadow-xs'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                    }`}
+                  >
+                    {hideSrsAnswers ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>Khóa từ</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Hiện từ</span>
+                      </>
+                    )}
+                  </button>
+
                   {sortedReviewItems.length > 0 && (
                     <button
                       type="button"
@@ -823,6 +854,7 @@ export const DictationPractice: React.FC = () => {
                 ) : (
                   sortedReviewItems.map((item, i) => {
                     const reps = item.repetitions || 0;
+                    const isCurrentActive = currentItem && currentItem.text && currentItem.text.trim().toLowerCase() === item.text.trim().toLowerCase();
 
                     // Level classification & Highlight style
                     // Level 1 (Urgent): reps <= 1 -> Rose/Red pulse badge
@@ -851,15 +883,35 @@ export const DictationPractice: React.FC = () => {
                       cardBorder = 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/30 hover:border-amber-300';
                     }
 
+                    const maskedText = hideSrsAnswers
+                      ? item.text.replace(/[a-zA-Z]/g, '•')
+                      : item.text;
+
                     return (
                       <div
                         key={item.id || item.text || i}
-                        className={`p-3 rounded-2xl border transition-all ${cardBorder} space-y-1`}
+                        className={`p-3 rounded-2xl border transition-all ${cardBorder} ${
+                          isCurrentActive ? 'ring-2 ring-emerald-500 shadow-md' : ''
+                        } space-y-1`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-xs text-slate-900 dark:text-white font-mono truncate">
-                            {item.text}
-                          </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {isCurrentActive && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500 text-white shrink-0" title="Từ đang được luyện tập hiện tại">
+                                🎯
+                              </span>
+                            )}
+                            <span
+                              className={`font-bold text-xs font-mono truncate ${
+                                hideSrsAnswers
+                                  ? 'blur-[4px] hover:blur-none select-none text-slate-500 dark:text-slate-400 cursor-pointer transition-all'
+                                  : 'text-slate-900 dark:text-white'
+                              }`}
+                              title={hideSrsAnswers ? "Rê chuột để mở khóa xem từ tiếng Anh" : item.text}
+                            >
+                              {maskedText}
+                            </span>
+                          </div>
                           {levelBadge}
                         </div>
                         {item.vi && (

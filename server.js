@@ -377,23 +377,24 @@ app.get('/api/lists', (req, res) => {
 });
 
 app.post('/api/lists', (req, res) => {
-  const { id, name, type, learner, by, items } = req.body;
+  const { id, name, type, tag, learner, by, items } = req.body;
   const listId = id || `list-${Date.now()}`;
   const now = Date.now();
 
   const stmt = db.prepare(`
-    INSERT INTO practice_lists (id, name, type, learner, by, items, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO practice_lists (id, name, type, tag, learner, by, items, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name,
       type = excluded.type,
+      tag = excluded.tag,
       learner = excluded.learner,
       by = excluded.by,
       items = excluded.items,
       updatedAt = excluded.updatedAt
   `);
 
-  stmt.run(listId, name || 'Bài học mới', type || 'words', learner || '', by || 'teacher', JSON.stringify(items || []), now, now);
+  stmt.run(listId, name || 'Bài học mới', type || 'words', tag || 'general', learner || '', by || 'teacher', JSON.stringify(items || []), now, now);
   res.json({ success: true, id: listId });
 });
 

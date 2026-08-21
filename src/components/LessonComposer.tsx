@@ -24,6 +24,7 @@ export const LessonComposer: React.FC = () => {
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [listName, setListName] = useState('');
   const [listType, setListType] = useState<PracticeItemType>('words');
+  const [listTag, setListTag] = useState<string>('curriculum');
   const [assignLearner, setAssignLearner] = useState('Bé Phúc Trí');
   const [rawText, setRawText] = useState('');
   const [stagedItems, setStagedItems] = useState<PracticeItem[]>([]);
@@ -35,6 +36,7 @@ export const LessonComposer: React.FC = () => {
     setEditingListId(null);
     setListName('');
     setListType('words');
+    setListTag('curriculum');
     setAssignLearner('Bé Phúc Trí');
     setRawText('');
     setStagedItems([]);
@@ -45,6 +47,7 @@ export const LessonComposer: React.FC = () => {
     setEditingListId(list.id);
     setListName(list.name);
     setListType(list.type);
+    setListTag(list.tag || 'curriculum');
     setAssignLearner(list.learner || '');
     setStagedItems(list.items || []);
     setRawText('');
@@ -55,30 +58,34 @@ export const LessonComposer: React.FC = () => {
     soundEffects.playPop();
     setIsTranslating(true);
 
-    const phrases = splitTextToPhrases(rawText, listType);
-    const newStaged: PracticeItem[] = [];
+    try {
+      const phrases = splitTextToPhrases(rawText, listType);
+      const parsed: PracticeItem[] = [];
 
-    for (let i = 0; i < phrases.length; i++) {
-      const phrase = phrases[i];
-      const vi = await translateTextMyMemory(phrase);
-      newStaged.push({
-        id: `item-${Date.now()}-${i}`,
-        text: phrase,
-        vi: vi || phrase
-      });
+      for (let i = 0; i < phrases.length; i++) {
+        const p = phrases[i];
+        const vi = await translateTextMyMemory(p);
+        parsed.push({
+          id: `item-${Date.now()}-${i}`,
+          text: p,
+          vi: vi || p
+        });
+      }
+      setStagedItems(prev => [...prev, ...parsed]);
+      setRawText('');
+      soundEffects.playCorrect();
+    } catch (e) {
+      console.warn('Lỗi phân tích văn bản:', e);
+    } finally {
+      setIsTranslating(false);
     }
-
-    setStagedItems(prev => [...prev, ...newStaged]);
-    setRawText('');
-    setIsTranslating(false);
-    soundEffects.playCorrect();
   };
 
   const handleAddManualItem = () => {
     soundEffects.playPop();
     setStagedItems(prev => [
       ...prev,
-      { id: `item-${Date.now()}`, text: '', vi: '' }
+      { id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, text: '', vi: '' }
     ]);
   };
 
@@ -107,6 +114,7 @@ export const LessonComposer: React.FC = () => {
       id: editingListId || `list-${Date.now()}`,
       name: listName.trim(),
       type: listType,
+      tag: listTag,
       learner: assignLearner.trim(),
       by: user?.displayName || 'teacher',
       items: validItems,
@@ -277,6 +285,21 @@ export const LessonComposer: React.FC = () => {
                 >
                   <option value="words">Từ vựng (Words & Phonics)</option>
                   <option value="sentences">Mẫu câu (Sentences)</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Phân loại bài học (Category Tag)</label>
+                <select
+                  value={listTag}
+                  onChange={e => setListTag(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value="curriculum">📚 Chương trình học chính (Curriculum)</option>
+                  <option value="3000words">📖 Bộ từ 3000 từ vựng (3000 Words)</option>
+                  <option value="music">🎵 Âm nhạc & Bài hát (Music & Songs)</option>
+                  <option value="phonics">🔤 Ngữ âm (Phonics & Sounds)</option>
+                  <option value="general">⚙️ Khác (General)</option>
                 </select>
               </div>
 

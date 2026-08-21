@@ -30,7 +30,7 @@ export const DictationPractice: React.FC = () => {
 
   // Search & Filter State in Aside Left
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState<'all' | '3000' | 'sentences' | 'assigned'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | '3000' | 'music' | 'phonics' | 'curriculum' | 'sentences' | 'assigned'>('all');
 
   // Find active list or fallback to SRS Review Pool mode
   const isSrsMode = activeListId === 'srs-review-pool';
@@ -60,11 +60,15 @@ export const DictationPractice: React.FC = () => {
     return lists.filter(l => {
       // 1. Search Query
       const query = searchQuery.trim().toLowerCase();
-      const matchesSearch = !query || l.name.toLowerCase().includes(query) || (l.items && l.items.some(i => i.text.toLowerCase().includes(query) || (i.vi && i.vi.toLowerCase().includes(query))));
+      const cleanName = l.name.replace(/^Langmaster:\s*/i, '').replace(/^3000 words:\s*/i, '');
+      const matchesSearch = !query || cleanName.toLowerCase().includes(query) || (l.items && l.items.some(i => i.text.toLowerCase().includes(query) || (i.vi && i.vi.toLowerCase().includes(query))));
 
       // 2. Category Filter
       if (!matchesSearch) return false;
-      if (filterCategory === '3000') return l.name.startsWith('3000 words:');
+      if (filterCategory === '3000') return l.tag === '3000words' || l.name.startsWith('3000 words:') || l.id.includes('langmaster');
+      if (filterCategory === 'music') return l.tag === 'music' || l.id.includes('counting-star');
+      if (filterCategory === 'phonics') return l.tag === 'phonics' || l.id.includes('phonics');
+      if (filterCategory === 'curriculum') return l.tag === 'curriculum' || l.id.includes('unit');
       if (filterCategory === 'sentences') return l.type === 'sentences';
       if (filterCategory === 'assigned') return l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
       
@@ -209,14 +213,34 @@ export const DictationPractice: React.FC = () => {
                 3000 Words
               </button>
               <button
-                onClick={() => setFilterCategory('sentences')}
+                onClick={() => setFilterCategory('music')}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  filterCategory === 'sentences'
-                    ? 'bg-emerald-500 text-white shadow-xs'
+                  filterCategory === 'music'
+                    ? 'bg-purple-500 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                 }`}
               >
-                Mẫu câu
+                Bài hát
+              </button>
+              <button
+                onClick={() => setFilterCategory('phonics')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  filterCategory === 'phonics'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                Phonics
+              </button>
+              <button
+                onClick={() => setFilterCategory('curriculum')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  filterCategory === 'curriculum'
+                    ? 'bg-blue-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                Giáo trình
               </button>
               {user?.displayName && (
                 <button
@@ -242,6 +266,8 @@ export const DictationPractice: React.FC = () => {
                 filteredLists.map(l => {
                   const isSelected = !isSrsMode && activeList?.id === l.id;
                   const isAssignedToMe = l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+                  const cleanName = l.name.replace(/^Langmaster:\s*/i, '').replace(/^3000 words:\s*/i, '');
+                  const tag = l.tag || (l.id.includes('langmaster') ? '3000words' : l.id.includes('counting-star') ? 'music' : l.id.includes('phonics') ? 'phonics' : 'curriculum');
 
                   return (
                     <div
@@ -259,14 +285,24 @@ export const DictationPractice: React.FC = () => {
                     >
                       <div className="space-y-1.5">
                         <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-2">
-                          {l.name}
+                          {cleanName}
                         </h3>
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {/* Tag Category Badge */}
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            tag === '3000words' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' :
+                            tag === 'music' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300' :
+                            tag === 'phonics' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                          }`}>
+                            {tag === '3000words' ? '3000 Words' : tag === 'music' ? 'Bài hát' : tag === 'phonics' ? 'Phonics' : 'Giáo trình'}
+                          </span>
+
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                             {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items?.length || 0})
                           </span>
                           {isAssignedToMe && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
                               <UserCheck className="w-3 h-3" />
                               <span>Giao bạn</span>
                             </span>

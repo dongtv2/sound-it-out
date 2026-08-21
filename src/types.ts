@@ -27,6 +27,7 @@ export interface PracticeList {
   id: string;
   name: string;
   type: PracticeItemType;
+  tag?: string;      // Category tag e.g. '3000words', 'music', 'phonics', 'curriculum', 'general'
   learner?: string; // Assigned student name (e.g. 'Bé Mai')
   by: string;      // Author
   items: PracticeItem[];

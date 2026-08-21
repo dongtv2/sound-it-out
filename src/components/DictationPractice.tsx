@@ -29,10 +29,15 @@ import {
   PanelRightClose,
   Maximize2,
   Minimize2,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft
 } from 'lucide-react';
 
-export const DictationPractice: React.FC = () => {
+export interface DictationPracticeProps {
+  onBackToDashboard?: () => void;
+}
+
+export const DictationPractice: React.FC<DictationPracticeProps> = ({ onBackToDashboard }) => {
   const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings } = usePractice();
   const { user } = useAuth();
 
@@ -377,9 +382,25 @@ export const DictationPractice: React.FC = () => {
         <main className={`transition-all duration-300 ${mainSpanClass} space-y-3.5`}>
           
           {/* Top Bar Stats */}
-          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md flex-wrap gap-2">
             <div className="flex items-center gap-2 min-w-0">
               
+              {/* BACK TO DASHBOARD BUTTON (INTEGRATED OPTIMIZED SPACE) */}
+              {onBackToDashboard && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEffects.playPop();
+                    onBackToDashboard();
+                  }}
+                  title="Quay lại Bảng Giao Bài Dashboard"
+                  className="px-2.5 py-1.5 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-black flex items-center gap-1.5 hover:bg-cyan-100 dark:hover:bg-cyan-900/80 transition-all cursor-pointer shrink-0 shadow-xs mr-1"
+                >
+                  <ArrowLeft className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <span className="hidden sm:inline">Bảng Dashboard</span>
+                </button>
+              )}
+
               {/* DUAL TOGGLE BOTH SIDEBARS BUTTON */}
               <button
                 type="button"

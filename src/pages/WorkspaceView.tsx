@@ -53,39 +53,9 @@ export const WorkspaceView: React.FC = () => {
       {activeTab === 'assigned' && (
         <>
           {practicingAssignedId ? (
-            /* EXPANDED PRACTICE MODE FOR ASSIGNED HOMEWORK (Layout Mở Rộng) */
-            <div className="w-full space-y-4 py-4 animate-in fade-in duration-300">
-              {/* Navigation Header for Expanded Practice */}
-              <div className="max-w-7xl mx-auto px-4 lg:px-6">
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-cyan-500/30 shadow-xl flex items-center justify-between flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      soundEffects.playPop();
-                      setPracticingAssignedId(null);
-                    }}
-                    className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-black flex items-center gap-2 hover:bg-cyan-50 dark:hover:bg-cyan-950/50 hover:text-cyan-600 transition-all cursor-pointer shadow-xs"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Quay Lại Bảng Giao Bài</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200 border border-cyan-200 dark:border-cyan-800 flex items-center gap-1.5">
-                      <Target className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 animate-pulse" />
-                      <span>🎯 Đang Thực Hành Bài Giao: {activeAssignedList?.name || 'Kho Bài Tập'}</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                    <UserCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Học sinh: <strong className="text-slate-900 dark:text-white font-black">{user?.displayName || 'Bé Phúc Trí'}</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Embedded Expanded Dictation Practice Component */}
-              <DictationPractice />
+            /* EXPANDED PRACTICE MODE FOR ASSIGNED HOMEWORK (Layout Mở Rộng - Space Optimized) */
+            <div className="w-full animate-in fade-in duration-300">
+              <DictationPractice onBackToDashboard={() => setPracticingAssignedId(null)} />
             </div>
           ) : (
             /* MOTIVATIONAL STUDENT LEARNING DASHBOARD */

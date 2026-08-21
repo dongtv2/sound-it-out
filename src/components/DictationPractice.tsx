@@ -100,6 +100,18 @@ export const DictationPractice: React.FC = () => {
     });
   }, [lists, searchQuery, filterCategory, user]);
 
+  // Priority-sorted review items for SRS Aside Right (urgent / lower repetitions on top)
+  const sortedReviewItems = useMemo(() => {
+    return [...reviewItems].sort((a, b) => {
+      const repA = a.repetitions || 0;
+      const repB = b.repetitions || 0;
+      if (repA !== repB) return repA - repB;
+      const dueA = a.dueDate || 0;
+      const dueB = b.dueDate || 0;
+      return dueA - dueB;
+    });
+  }, [reviewItems]);
+
   // Web Speech API Audio Player
   const speakText = (text: string) => {
     if (!('speechSynthesis' in window)) return;
@@ -674,81 +686,107 @@ export const DictationPractice: React.FC = () => {
         {showRightSidebar && (
           <aside className="lg:col-span-3 space-y-4 sticky top-20 animate-in fade-in slide-in-from-right duration-200">
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col max-h-[calc(100vh-110px)]">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between gap-2">
                 <div>
                   <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
-                    <span>Kho Từ Ôn Tập SM-2</span>
+                    <span>Kho Từ Ôn Tập</span>
                   </h2>
                   <p className="text-[11px] font-bold text-slate-400 mt-0.5">
-                    Tự động tổng hợp từ tất cả các bài học
+                    {sortedReviewItems.length} từ / cụm từ cần ghi nhớ
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundEffects.playPop();
-                    setShowRightSidebar(false);
-                  }}
-                  title="Ẩn kho từ SM-2 (Bên phải)"
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
-                >
-                  <PanelRightClose className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Smart Auto-Queue Trigger Button */}
-              <div
-                onClick={() => {
-                  soundEffects.playPop();
-                  setActiveListId('srs-review-pool');
-                  setCurrentIndex(0);
-                }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                  isSrsMode
-                    ? 'border-amber-500 bg-amber-50/40 dark:bg-amber-950/40 shadow-md ring-1 ring-amber-500/30'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-amber-400 bg-slate-50/50 dark:bg-slate-950/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
-                    <div>
-                      <h3 className="font-black text-xs text-slate-900 dark:text-white">⭐ Nút Ôn Tập Tự Động</h3>
-                      <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Gom toàn bộ từ đến hạn</div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
-                    {reviewItems.length} từ
-                  </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {sortedReviewItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEffects.playPop();
+                        setActiveListId('srs-review-pool');
+                        setCurrentIndex(0);
+                      }}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
+                        isSrsMode
+                          ? 'bg-amber-500 text-white shadow-amber-500/20'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:scale-105 active:scale-95'
+                      }`}
+                      title="Bắt đầu luyện tập ngay kho từ cần ôn"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      <span>Ôn Ngay ({sortedReviewItems.length})</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEffects.playPop();
+                      setShowRightSidebar(false);
+                    }}
+                    title="Ẩn kho từ bên phải"
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+                  >
+                    <PanelRightClose className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
-                {reviewItems.length === 0 ? (
+              {/* Scrollable Priority-Sorted SRS Review Items */}
+              <div className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
+                {sortedReviewItems.length === 0 ? (
                   <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
-                    Kho SRS đang trống. Chấm điểm bài tập để tự động lưu từ khó!
+                    Kho từ ôn tập đang trống. Chấm điểm bài tập để tự động tích luỹ từ khó!
                   </div>
                 ) : (
-                  reviewItems.map((item, i) => (
-                    <div
-                      key={item.id || i}
-                      className="p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/60 space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-slate-900 dark:text-white font-mono">{item.text}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Lặp: {item.repetitions || 0}</span>
+                  sortedReviewItems.map((item, i) => {
+                    const reps = item.repetitions || 0;
+
+                    // Level classification & Highlight style
+                    // Level 1 (Urgent): reps <= 1 -> Rose/Red pulse badge
+                    // Level 2 (Medium): reps 2-3 -> Amber/Yellow badge
+                    // Level 3 (Mastered): reps >= 4 -> Emerald/Green badge
+                    let levelBadge = (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200 border border-rose-200 dark:border-rose-800 flex items-center gap-1 shrink-0 animate-pulse">
+                        🔥 Ôn gấp ({reps})
+                      </span>
+                    );
+                    let cardBorder = 'border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/30 hover:border-rose-300';
+
+                    if (reps >= 4) {
+                      levelBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 shrink-0">
+                          ✅ Thuộc tốt ({reps})
                         </span>
-                      </div>
-                      {item.vi && (
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                          {item.vi}
+                      );
+                      cardBorder = 'border-emerald-200/70 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-300';
+                    } else if (reps >= 2) {
+                      levelBadge = (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 border border-amber-200 dark:border-amber-800 flex items-center gap-1 shrink-0">
+                          ⚡ Củng cố ({reps})
+                        </span>
+                      );
+                      cardBorder = 'border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/30 hover:border-amber-300';
+                    }
+
+                    return (
+                      <div
+                        key={item.id || item.text || i}
+                        className={`p-3 rounded-2xl border transition-all ${cardBorder} space-y-1`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs text-slate-900 dark:text-white font-mono truncate">
+                            {item.text}
+                          </span>
+                          {levelBadge}
                         </div>
-                      )}
-                    </div>
-                  ))
+                        {item.vi && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                            {item.vi}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>

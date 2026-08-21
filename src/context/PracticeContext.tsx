@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import type { CategoryTag, PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport, SrsSettings } from '@/types';
+import type { CategoryTag, PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport, SrsSettings, TtsSettings } from '@/types';
 import { api } from '@/services/api';
 
 export type SoundItOutTab = 'practice' | 'composer' | 'assigned' | 'reports' | 'admin';
@@ -13,6 +13,8 @@ interface PracticeContextType {
   studentReports: StudentReport[];
   srsSettings: SrsSettings;
   updateSrsSettings: (settings: Partial<SrsSettings>) => void;
+  ttsSettings: TtsSettings;
+  updateTtsSettings: (settings: Partial<TtsSettings>) => void;
   dialect: Dialect;
   strictMode: boolean;
   uiLang: UiLanguage;
@@ -46,6 +48,15 @@ const DEFAULT_SRS_SETTINGS: SrsSettings = {
   strictPriorityMode: true
 };
 
+const DEFAULT_TTS_SETTINGS: TtsSettings = {
+  engine: 'browser_native',
+  accent: 'en-US',
+  voiceName: 'auto',
+  rate: 0.9,
+  pitch: 1.0,
+  autoPlayOnNext: true
+};
+
 const SETTINGS_STORAGE_KEY = 'sound-it-out-settings-v3';
 
 const PracticeContext = createContext<PracticeContextType | undefined>(undefined);
@@ -65,11 +76,29 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return DEFAULT_SRS_SETTINGS;
   });
 
+  const [ttsSettings, setTtsSettingsState] = useState<TtsSettings>(() => {
+    try {
+      const saved = localStorage.getItem('sound-it-out-tts-settings-v1');
+      if (saved) return { ...DEFAULT_TTS_SETTINGS, ...JSON.parse(saved) };
+    } catch (e) {}
+    return DEFAULT_TTS_SETTINGS;
+  });
+
   const updateSrsSettings = useCallback((newSettings: Partial<SrsSettings>) => {
     setSrsSettingsState(prev => {
       const next = { ...prev, ...newSettings };
       try {
         localStorage.setItem('sound-it-out-srs-settings-v1', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const updateTtsSettings = useCallback((newSettings: Partial<TtsSettings>) => {
+    setTtsSettingsState(prev => {
+      const next = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('sound-it-out-tts-settings-v1', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -350,6 +379,8 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       studentReports,
       srsSettings,
       updateSrsSettings,
+      ttsSettings,
+      updateTtsSettings,
       dialect,
       strictMode,
       uiLang,

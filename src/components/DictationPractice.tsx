@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePractice } from '@/context/PracticeContext';
 import { useAuth } from '@/context/AuthContext';
 import { soundEffects } from '@/services/sound-effects';
+import { ttsService } from '@/services/tts-service';
 import type { PracticeItem, SrsGrade } from '@/types';
 import { 
   Volume2, 
@@ -38,7 +39,7 @@ export interface DictationPracticeProps {
 }
 
 export const DictationPractice: React.FC<DictationPracticeProps> = ({ onBackToDashboard }) => {
-  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings, addStudentReport } = usePractice();
+  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings, addStudentReport, ttsSettings } = usePractice();
   const { user } = useAuth();
 
   // Search & Filter State in Aside Left
@@ -137,16 +138,13 @@ export const DictationPractice: React.FC<DictationPracticeProps> = ({ onBackToDa
     return lists.find(l => l.items?.some(i => i.id === currentItem.id || i.text.trim().toLowerCase() === currentItem.text.trim().toLowerCase())) || null;
   }, [isSrsMode, activeList, currentItem, lists]);
 
-  // Web Speech API Audio Player
+  // Native TTS Audio Player with System Settings & Fallback
   const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = playbackSpeed;
-    utterance.lang = dialect === 'uk' ? 'en-GB' : 'en-US';
-
-    window.speechSynthesis.speak(utterance);
+    ttsService.speak(text, {
+      ...ttsSettings,
+      rate: playbackSpeed || ttsSettings.rate || 0.9,
+      accent: dialect === 'uk' ? 'en-GB' : (ttsSettings.accent || 'en-US')
+    });
   };
 
   useEffect(() => {

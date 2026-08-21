@@ -83,3 +83,12 @@ export interface SrsSettings {
   intervalMultiplier: number;
   strictPriorityMode: boolean;
 }
+
+export interface TtsSettings {
+  engine: 'browser_native' | 'google_tts_cdn';
+  accent: 'en-US' | 'en-GB' | 'en-AU';
+  voiceName: string;
+  rate: number;
+  pitch: number;
+  autoPlayOnNext: boolean;
+}

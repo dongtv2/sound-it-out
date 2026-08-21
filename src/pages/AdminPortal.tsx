@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePractice } from '@/context/PracticeContext';
 import { soundEffects } from '@/services/sound-effects';
 import type { UserProfile, UserRole } from '@/types';
+import { ttsService } from '@/services/tts-service';
 import { 
   Users, 
   Settings, 
@@ -19,14 +20,17 @@ import {
   Globe, 
   Volume2, 
   CheckCircle2,
-  Lock
+  Lock,
+  Play,
+  Zap
 } from 'lucide-react';
 
 export const AdminPortal: React.FC = () => {
   const { user, familyUsers, createUser, updateUser, deleteUser } = useAuth();
-  const { lists, deleteList, studentReports, deleteStudentReport, dialect, setDialect, strictMode, setStrictMode, srsSettings, updateSrsSettings, reviewItems, clearAllReview } = usePractice();
+  const { lists, deleteList, studentReports, deleteStudentReport, dialect, setDialect, strictMode, setStrictMode, srsSettings, updateSrsSettings, reviewItems, clearAllReview, ttsSettings, updateTtsSettings } = usePractice();
 
-  const [adminTab, setAdminTab] = useState<'users' | 'settings' | 'catalog' | 'reports' | 'srs'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'settings' | 'catalog' | 'reports' | 'srs' | 'tts'>('users');
+  const [testText, setTestText] = useState('Sound It Out makes English listening and dictation learning fun and effective!');
 
   // New User Form State
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -165,6 +169,18 @@ export const AdminPortal: React.FC = () => {
           >
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>5. Cấu Hình SRS SM-2 ({reviewItems.length})</span>
+          </button>
+
+          <button
+            onClick={() => { soundEffects.playPop(); setAdminTab('tts'); }}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+              adminTab === 'tts'
+                ? 'bg-white text-purple-950 shadow-lg'
+                : 'bg-purple-950/50 text-purple-200 hover:bg-purple-900/60'
+            }`}
+          >
+            <Volume2 className="w-4 h-4 text-emerald-400" />
+            <span>6. Cấu Hình TTS Native</span>
           </button>
         </div>
       </div>
@@ -585,6 +601,149 @@ export const AdminPortal: React.FC = () => {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* TAB 6: TTS SYSTEM VOICE CONFIGURATION */}
+      {adminTab === 'tts' && (
+        <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 flex-wrap gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-emerald-500" />
+                <span>🔊 Cấu Hình Giọng Đọc TTS Native (Text-To-Speech)</span>
+              </h2>
+              <p className="text-xs font-bold text-slate-400 mt-1">
+                Lựa chọn mô hình và chất giọng tiếng Anh chuẩn bản xứ (Native US / UK / AU) cho câu và từ vựng.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundEffects.playPop();
+                ttsService.speak(testText, ttsSettings);
+              }}
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Thử Giọng Đọc Mẫu</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Setting 1: Engine Selection */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                Công Nghệ & Engine Giọng Đọc
+              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Chọn giữa giọng đọc tự nhiên High-Definition của hệ điều hành hoặc luồng Audio Cloud fallback.
+              </p>
+              <select
+                value={ttsSettings.engine}
+                onChange={e => updateTtsSettings({ engine: e.target.value as any })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+              >
+                <option value="browser_native">🌐 Web Speech API (Google / Apple / Microsoft HD Natural Voices - Khuyên Dùng)</option>
+                <option value="google_tts_cdn">⚡ Cloud Audio Stream Fallback (Google Audio CDN API)</option>
+              </select>
+            </div>
+
+            {/* Setting 2: Accent Selection */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                Chất Giọng Bản Xứ Mặc Định (Native Accent)
+              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Tự động chọn giọng đọc bản xứ theo khu vực ưu tiên khi học sinh luyện nghe.
+              </p>
+              <select
+                value={ttsSettings.accent}
+                onChange={e => updateTtsSettings({ accent: e.target.value as any })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+              >
+                <option value="en-US">🇺🇸 Tiếng Anh - Mỹ (Native US English - Standard Accent)</option>
+                <option value="en-GB">🇬🇧 Tiếng Anh - Anh (Native UK English - Received Pronunciation)</option>
+                <option value="en-AU">🇦🇺 Tiếng Anh - Úc (Native Australian English)</option>
+              </select>
+            </div>
+
+            {/* Setting 3: Voice Selection */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                Mô Hình Giọng Đọc Cụ Thể (Voice Model)
+              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Danh sách giọng đọc tự nhiên cài đặt sẵn trên máy tính / thiết bị của bạn.
+              </p>
+              <select
+                value={ttsSettings.voiceName || 'auto'}
+                onChange={e => updateTtsSettings({ voiceName: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+              >
+                <option value="auto">✨ Tự Động Chọn Giọng Chuẩn Nhất (Google / Natural / Samantha)</option>
+                {ttsService.getAllEnglishVoices().map((v, i) => (
+                  <option key={v.name + i} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Setting 4: Speech Rate */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  Tốc Độ Đọc Tiêu Chuẩn (Speech Speed)
+                </label>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-black">
+                  {ttsSettings.rate}x
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Tốc độ đọc từ vựng và câu đàm thoại. Mặc định 0.9x để học sinh nghe rõ từng âm tiết.
+              </p>
+              <input
+                type="range"
+                min="0.5"
+                max="1.5"
+                step="0.05"
+                value={ttsSettings.rate}
+                onChange={e => updateTtsSettings({ rate: parseFloat(e.target.value) })}
+                className="w-full accent-emerald-500 cursor-pointer"
+              />
+            </div>
+
+          </div>
+
+          {/* Test Sentence Textbox */}
+          <div className="p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
+            <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+              Văn Bản Thử Giọng Đọc (Test Sentence / Word)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={testText}
+                onChange={e => setTestText(e.target.value)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  ttsService.speak(testText, ttsSettings);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer hover:bg-emerald-500"
+              >
+                <Volume2 className="w-4 h-4" />
+                <span>Phát Âm</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       )}
 

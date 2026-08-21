@@ -47,7 +47,7 @@ export const DictationPractice: React.FC = () => {
     if (showLeftSidebar && showRightSidebar) return 'lg:col-span-6';
     if (!showLeftSidebar && showRightSidebar) return 'lg:col-span-9';
     if (showLeftSidebar && !showRightSidebar) return 'lg:col-span-9';
-    return 'lg:col-span-12 max-w-4xl mx-auto';
+    return 'lg:col-span-12 w-full max-w-5xl mx-auto';
   }, [showLeftSidebar, showRightSidebar]);
 
   // Find active list or fallback to SRS Review Pool mode
@@ -460,10 +460,10 @@ export const DictationPractice: React.FC = () => {
                 </div>
 
                 {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX & IPA & IMAGE */}
-                <div className="w-full max-w-xl mx-auto space-y-2.5">
+                <div className="w-full max-w-3xl mx-auto space-y-2.5">
                   {/* Image Illustration if available and valid */}
                   {currentItem.imageUrl && !imgError && (
-                    <div className="w-full max-h-32 sm:max-h-36 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <div className="w-full max-h-36 sm:max-h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs">
                       <img 
                         src={currentItem.imageUrl} 
                         alt={currentItem.text} 
@@ -498,7 +498,7 @@ export const DictationPractice: React.FC = () => {
               </div>
 
               {/* INTERACTIVE WORD & LETTER SLOT GUIDE (_ _ _  _ _ _ _ _  _ _ _) */}
-              <div className="w-full max-w-xl mx-auto p-3 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+              <div className="w-full max-w-3xl mx-auto p-3.5 bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
                 {/* Letter Slots */}
                 <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-3 py-0.5">
                   {currentItem.text.split(' ').map((word, wordIdx, wordArr) => {
@@ -538,7 +538,7 @@ export const DictationPractice: React.FC = () => {
               </div>
 
               {/* EXPANDED SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
-              <form onSubmit={handleSubmitSpelling} className="w-full max-w-xl mx-auto space-y-3">
+              <form onSubmit={handleSubmitSpelling} className="w-full max-w-3xl mx-auto space-y-3">
                 <div className="relative">
                   <input
                     ref={inputRef}
@@ -588,7 +588,7 @@ export const DictationPractice: React.FC = () => {
 
                     {/* WRONG ANSWER HINT BANNER WITH 3-SECOND AUTO-HIDE & ANTI-COPY-PASTE PROTECTION */}
                     {!isCorrect && showWrongHint && (
-                      <div className="w-full max-w-xl mx-auto p-4 rounded-2xl flex items-center gap-3 border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-md animate-in fade-in zoom-in-95 duration-150">
+                      <div className="w-full max-w-3xl mx-auto p-4 rounded-2xl flex items-center gap-3 border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-md animate-in fade-in zoom-in-95 duration-150">
                         <XCircle className="w-6 h-6 shrink-0 text-rose-500" />
                         
                         {/* ANTI-COPY-PASTE & UNSELECTABLE CONTAINER */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { usePractice } from '@/context/PracticeContext';
 import { useAuth } from '@/context/AuthContext';
 import { soundEffects } from '@/services/sound-effects';
@@ -16,12 +16,21 @@ import {
   Sparkles,
   UserCheck,
   Clock,
-  EyeOff
+  EyeOff,
+  Search,
+  X,
+  Filter,
+  Zap,
+  Check
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
   const { lists, activeListId, setActiveListId, dialect, gradeItem, reviewItems } = usePractice();
   const { user } = useAuth();
+
+  // Search & Filter State in Aside Left
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<'all' | '3000' | 'sentences' | 'assigned'>('all');
 
   // Find active list or fallback to SRS Review Pool mode
   const isSrsMode = activeListId === 'srs-review-pool';
@@ -45,6 +54,23 @@ export const DictationPractice: React.FC = () => {
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentItem = practiceItems[currentIndex] || { text: 'Welcome', vi: 'Chào mừng' };
+
+  // Filtered Lists Logic
+  const filteredLists = useMemo(() => {
+    return lists.filter(l => {
+      // 1. Search Query
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = !query || l.name.toLowerCase().includes(query) || (l.items && l.items.some(i => i.text.toLowerCase().includes(query) || (i.vi && i.vi.toLowerCase().includes(query))));
+
+      // 2. Category Filter
+      if (!matchesSearch) return false;
+      if (filterCategory === '3000') return l.name.startsWith('3000 words:');
+      if (filterCategory === 'sentences') return l.type === 'sentences';
+      if (filterCategory === 'assigned') return l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+      
+      return true;
+    });
+  }, [lists, searchQuery, filterCategory, user]);
 
   // Web Speech API Audio Player
   const speakText = (text: string) => {
@@ -123,69 +149,178 @@ export const DictationPractice: React.FC = () => {
       {/* 3-COLUMN BALANCED LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* ASIDE LEFT: Danh sách bài học được assign */}
+        {/* ASIDE LEFT: Danh sách bài học & Tìm kiếm thông minh */}
         <aside className="lg:col-span-3 space-y-4">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            
+            {/* Header */}
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <ListMusic className="w-4 h-4 text-emerald-500" />
-                <span>Bài học được assign</span>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <ListMusic className="w-4 h-4 text-emerald-500" />
+                  <span>Danh Sách Bài Học</span>
+                </span>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  {filteredLists.length}/{lists.length}
+                </span>
               </h2>
-              <p className="text-[11px] font-bold text-slate-400 mt-0.5">
-                Danh sách bài tập dành cho bạn
-              </p>
             </div>
 
-            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
-              {lists.map(l => {
-                const isSelected = !isSrsMode && activeList?.id === l.id;
-                const isAssignedToMe = l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+            {/* Smart Search Box */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Tìm chủ đề, từ vựng..."
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
-                return (
-                  <div
-                    key={l.id}
-                    onClick={() => {
-                      soundEffects.playPop();
-                      setActiveListId(l.id);
-                      setCurrentIndex(0);
-                    }}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-md ring-1 ring-emerald-500/30'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50'
-                    }`}
-                  >
-                    <div className="space-y-1.5">
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-2">
-                        {l.name}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items.length} phần)
-                        </span>
-                        {isAssignedToMe && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
-                            <UserCheck className="w-3 h-3" />
-                            <span>Giao cho bạn</span>
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                onClick={() => setFilterCategory('all')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  filterCategory === 'all'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({lists.length})
+              </button>
+              <button
+                onClick={() => setFilterCategory('3000')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  filterCategory === '3000'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                3000 Words
+              </button>
+              <button
+                onClick={() => setFilterCategory('sentences')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  filterCategory === 'sentences'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                Mẫu câu
+              </button>
+              {user?.displayName && (
+                <button
+                  onClick={() => setFilterCategory('assigned')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    filterCategory === 'assigned'
+                      ? 'bg-cyan-500 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  Giao bạn
+                </button>
+              )}
+            </div>
+
+            {/* Scrollable Lesson List */}
+            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+              {filteredLists.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
+                  Không tìm thấy bài học phù hợp.
+                </div>
+              ) : (
+                filteredLists.map(l => {
+                  const isSelected = !isSrsMode && activeList?.id === l.id;
+                  const isAssignedToMe = l.learner && user?.displayName && l.learner.toLowerCase().includes(user.displayName.toLowerCase());
+
+                  return (
+                    <div
+                      key={l.id}
+                      onClick={() => {
+                        soundEffects.playPop();
+                        setActiveListId(l.id);
+                        setCurrentIndex(0);
+                      }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-md ring-1 ring-emerald-500/30'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50'
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-2">
+                          {l.name}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items?.length || 0})
                           </span>
-                        )}
+                          {isAssignedToMe && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 flex items-center gap-1">
+                              <UserCheck className="w-3 h-3" />
+                              <span>Giao bạn</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </aside>
 
         {/* CENTER MAIN WORKSPACE */}
         <main className="lg:col-span-6 space-y-6">
+          
+          {/* TOP AUTOMATED SM-2 SMART REVIEW BANNER */}
+          {reviewItems.length > 0 && (
+            <div 
+              onClick={() => {
+                soundEffects.playPop();
+                setActiveListId('srs-review-pool');
+                setCurrentIndex(0);
+              }}
+              className="bg-gradient-to-r from-amber-500 via-emerald-600 to-teal-600 p-4 rounded-3xl text-white shadow-xl flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                  <Zap className="w-6 h-6 text-amber-200 animate-pulse" />
+                </div>
+                <div>
+                  <div className="font-black text-sm uppercase tracking-wider text-amber-100 flex items-center gap-2">
+                    <span>🔥 Ôn Tập Thông Minh SM-2 Tự Động</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/30 text-white text-[10px]">Auto Queue</span>
+                  </div>
+                  <div className="text-xs font-bold text-white/90 mt-0.5">
+                    Hệ thống đã tự động gom {reviewItems.length} từ cần ôn hôm nay cho bạn!
+                  </div>
+                </div>
+              </div>
+
+              <button className="px-4 py-2.5 rounded-2xl bg-white text-slate-900 font-black text-xs shadow-md group-hover:bg-amber-100 transition-colors flex items-center gap-1.5 shrink-0">
+                <span>Ôn Ngay ({reviewItems.length})</span>
+              </button>
+            </div>
+          )}
+
           {/* Top Bar Stats */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
             <div className="flex items-center gap-2 min-w-0">
               <BookOpen className="w-5 h-5 text-emerald-500 shrink-0" />
               <span className="font-black text-sm text-slate-900 dark:text-white truncate">
-                {isSrsMode ? '⭐ Ôn tập Kho SRS' : activeList?.name}
+                {isSrsMode ? '⭐ Ôn tập Kho SRS Tự Động' : activeList?.name}
               </span>
             </div>
 
@@ -208,7 +343,7 @@ export const DictationPractice: React.FC = () => {
               <BrainCircuit className="w-12 h-12 text-slate-400 mx-auto" />
               <h3 className="text-lg font-black text-slate-900 dark:text-white">Chưa có bài tập trong danh sách này</h3>
               <p className="text-xs font-bold text-slate-500 max-w-sm mx-auto">
-                Hãy chọn bài tập khác ở thanh bên trái hoặc chọn Kho SRS bên phải!
+                Hãy chọn bài tập khác ở thanh bên trái hoặc chọn Phiên Ôn Tập SM-2 bên phải!
               </p>
             </div>
           ) : (
@@ -387,19 +522,20 @@ export const DictationPractice: React.FC = () => {
           )}
         </main>
 
-        {/* ASIDE RIGHT: ⭐ Kho Từ Cần Ôn Tập SRS */}
+        {/* ASIDE RIGHT: ⭐ Kho Từ Cần Ôn Tập SRS & Nút Ôn Tập Tự Động */}
         <aside className="lg:col-span-3 space-y-4">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
-                <span>Kho Từ Cần Ôn Tập SRS</span>
+                <span>Kho Từ Ôn Tập SM-2</span>
               </h2>
               <p className="text-[11px] font-bold text-slate-400 mt-0.5">
-                Thuật toán Spaced Repetition SM-2
+                Tự động tổng hợp từ tất cả các bài học
               </p>
             </div>
 
+            {/* Smart Auto-Queue Trigger Button */}
             <div
               onClick={() => {
                 soundEffects.playPop();
@@ -416,8 +552,8 @@ export const DictationPractice: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
                   <div>
-                    <h3 className="font-black text-xs text-slate-900 dark:text-white">⭐ Ôn Tập Kho SRS</h3>
-                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Tất cả từ khó đến hạn</div>
+                    <h3 className="font-black text-xs text-slate-900 dark:text-white">⭐ Nút Ôn Tập Tự Động</h3>
+                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Gom toàn bộ từ đến hạn</div>
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
@@ -426,7 +562,7 @@ export const DictationPractice: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
               {reviewItems.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
                   Kho SRS đang trống. Chấm điểm bài tập để tự động lưu từ khó!

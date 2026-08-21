@@ -82,7 +82,7 @@ export const AdminPortal: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6 space-y-8">
+    <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-8">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-purple-900 via-slate-900 to-indigo-900 p-8 rounded-3xl text-white border border-purple-500/20 shadow-2xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />

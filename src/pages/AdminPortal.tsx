@@ -647,6 +647,7 @@ export const AdminPortal: React.FC = () => {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
               >
                 <option value="browser_native">🌐 Web Speech API (Google / Apple / Microsoft HD Natural Voices - Khuyên Dùng)</option>
+                <option value="openai_tts">🤖 OpenAI Audio Speech API (Generative Studio AI Voices - Giọng Đọc AI Đỉnh Cao)</option>
                 <option value="google_tts_cdn">⚡ Cloud Audio Stream Fallback (Google Audio CDN API)</option>
               </select>
             </div>
@@ -715,6 +716,64 @@ export const AdminPortal: React.FC = () => {
                 className="w-full accent-emerald-500 cursor-pointer"
               />
             </div>
+
+            {/* Setting 5: OpenAI Specific Configuration */}
+            {ttsSettings.engine === 'openai_tts' && (
+              <div className="p-5 rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20 space-y-4 md:col-span-2 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between border-b border-purple-100 dark:border-purple-900/40 pb-3">
+                  <h3 className="text-xs font-black text-purple-950 dark:text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    <span>Cấu Hình Chi Tiết Mô Hình Giọng Đọc OpenAI AI</span>
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500 text-white uppercase">Studio Neural AI</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* OpenAI Voice Selection */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">Mẫu Giọng Đọc OpenAI Voice</label>
+                    <select
+                      value={ttsSettings.openaiVoice || 'nova'}
+                      onChange={e => updateTtsSettings({ openaiVoice: e.target.value as any })}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                    >
+                      <option value="nova">🌟 Nova (Ấm áp, biểu cảm - Nữ Mỹ khuyên dùng)</option>
+                      <option value="shimmer">✨ Shimmer (Rõ ràng, năng động - Nữ Mỹ)</option>
+                      <option value="alloy">💎 Alloy (Trung tính, tự nhiên - Chuẩn)</option>
+                      <option value="echo">🗣️ Echo (Trầm ấm, điềm tĩnh - Nam)</option>
+                      <option value="onyx">🎙️ Onyx (Giọng Nam trầm quyến rũ)</option>
+                      <option value="fable">📖 Fable (Giọng đọc truyện truyền cảm)</option>
+                    </select>
+                  </div>
+
+                  {/* OpenAI Quality Model */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">Mô Hình Chất Lượng (Model)</label>
+                    <select
+                      value={ttsSettings.openaiModel || 'tts-1'}
+                      onChange={e => updateTtsSettings({ openaiModel: e.target.value as any })}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-bold cursor-pointer"
+                    >
+                      <option value="tts-1">⚡ tts-1 (Tối ưu tốc độ & phản hồi nhanh)</option>
+                      <option value="tts-1-hd">🎧 tts-1-hd (Chất lượng Studio âm thanh gốc HD)</option>
+                    </select>
+                  </div>
+
+                  {/* OpenAI API Key */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1">OpenAI API Key (Tùy chọn)</label>
+                    <input
+                      type="password"
+                      value={ttsSettings.openaiApiKey || ''}
+                      onChange={e => updateTtsSettings({ openaiApiKey: e.target.value })}
+                      placeholder="sk-proj-..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 text-xs font-mono font-bold"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">Bỏ trống nếu đã cấu hình trong env server.</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
 

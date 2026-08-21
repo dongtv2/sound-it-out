@@ -85,9 +85,12 @@ export interface SrsSettings {
 }
 
 export interface TtsSettings {
-  engine: 'browser_native' | 'google_tts_cdn';
+  engine: 'browser_native' | 'openai_tts' | 'google_tts_cdn';
   accent: 'en-US' | 'en-GB' | 'en-AU';
   voiceName: string;
+  openaiVoice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+  openaiModel: 'tts-1' | 'tts-1-hd';
+  openaiApiKey?: string;
   rate: number;
   pitch: number;
   autoPlayOnNext: boolean;

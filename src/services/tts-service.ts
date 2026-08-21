@@ -2,6 +2,8 @@ import type { TtsSettings } from '@/types';
 
 class TtsService {
   private voices: SpeechSynthesisVoice[] = [];
+  private audioCache: Map<string, string> = new Map();
+  private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
     this.initVoices();
@@ -38,23 +40,34 @@ class TtsService {
     return this.voices.filter(v => v.lang.toLowerCase().startsWith('en'));
   }
 
-  public speak(text: string, settings: TtsSettings) {
+  public async speak(text: string, settings: TtsSettings) {
     if (!text || !text.trim()) return;
     const cleanText = text.trim();
 
-    // Option 1: Cloud Google Audio Stream CDN Fallback
+    this.stop(); // Stop previous audio or speech
+
+    // Option 1: OpenAI Generative Neural TTS API
+    if (settings.engine === 'openai_tts') {
+      try {
+        await this.speakOpenAI(cleanText, settings);
+        return;
+      } catch (err) {
+        console.warn('OpenAI TTS failed, falling back to Native SpeechSynthesis:', err);
+        // Fallback to Native Speech below
+      }
+    }
+
+    // Option 2: Cloud Google Audio Stream CDN Fallback
     if (settings.engine === 'google_tts_cdn') {
       this.speakGoogleCdn(cleanText, settings.accent, settings.rate);
       return;
     }
 
-    // Option 2: Browser Native Web Speech API
+    // Option 3: Browser Native Web Speech API
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       this.speakGoogleCdn(cleanText, settings.accent, settings.rate);
       return;
     }
-
-    window.speechSynthesis.cancel(); // Stop current playing speech
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = settings.accent || 'en-US';
@@ -82,14 +95,48 @@ class TtsService {
     window.speechSynthesis.speak(utterance);
   }
 
+  private async speakOpenAI(text: string, settings: TtsSettings) {
+    const cacheKey = `${text}-${settings.openaiVoice || 'nova'}-${settings.openaiModel || 'tts-1'}-${settings.rate || 0.9}`;
+
+    let objectUrl = this.audioCache.get(cacheKey);
+
+    if (!objectUrl) {
+      const res = await fetch('/api/tts/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: settings.openaiVoice || 'nova',
+          model: settings.openaiModel || 'tts-1',
+          speed: settings.rate || 0.9,
+          apiKey: settings.openaiApiKey || ''
+        })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to fetch OpenAI TTS');
+      }
+
+      const blob = await res.blob();
+      objectUrl = URL.createObjectURL(blob);
+      this.audioCache.set(cacheKey, objectUrl);
+    }
+
+    const audio = new Audio(objectUrl);
+    audio.playbackRate = settings.rate || 0.9;
+    this.currentAudio = audio;
+    await audio.play();
+  }
+
   private speakGoogleCdn(text: string, accent: string, rate: number) {
     const lang = accent === 'en-GB' ? 'en-GB' : accent === 'en-AU' ? 'en-AU' : 'en-US';
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
     
     const audio = new Audio(url);
     audio.playbackRate = rate || 0.9;
+    this.currentAudio = audio;
     audio.play().catch(() => {
-      // Fallback to native SpeechSynthesis if audio play fails
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
@@ -101,6 +148,11 @@ class TtsService {
   public stop() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+    }
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
     }
   }
 }

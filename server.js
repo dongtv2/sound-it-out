@@ -303,6 +303,49 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', database: 'sqlite', domain: 'sound-it-out.metta.family' });
 });
 
+// OpenAI Audio Speech API Proxy
+app.post('/api/tts/openai', async (req, res) => {
+  const { text, voice, model, speed, apiKey } = req.body;
+  const key = apiKey || process.env.OPENAI_API_KEY;
+
+  if (!key) {
+    return res.status(400).json({ error: 'Chưa cấu hình OpenAI API Key trong hệ thống!' });
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model || 'tts-1',
+        input: text,
+        voice: voice || 'nova',
+        speed: speed || 0.9,
+        response_format: 'mp3'
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res.status(response.status).json({ error: `OpenAI API Error: ${errText}` });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': buffer.length
+    });
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: `Server OpenAI TTS Error: ${err.message}` });
+  }
+});
+
 // Auth APIs
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;

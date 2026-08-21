@@ -52,6 +52,9 @@ const DEFAULT_TTS_SETTINGS: TtsSettings = {
   engine: 'browser_native',
   accent: 'en-US',
   voiceName: 'auto',
+  openaiVoice: 'nova',
+  openaiModel: 'tts-1',
+  openaiApiKey: '',
   rate: 0.9,
   pitch: 1.0,
   autoPlayOnNext: true

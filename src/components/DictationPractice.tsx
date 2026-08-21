@@ -15,7 +15,8 @@ import {
   BookOpen,
   Sparkles,
   UserCheck,
-  Clock
+  Clock,
+  EyeOff
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
@@ -34,10 +35,14 @@ export const DictationPractice: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [isAnswered, setIsAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [showWrongHint, setShowWrongHint] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [streak, setStreak] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentItem = practiceItems[currentIndex] || { text: 'Welcome', vi: 'Chào mừng' };
 
@@ -57,6 +62,10 @@ export const DictationPractice: React.FC = () => {
     setUserInput('');
     setIsAnswered(false);
     setIsCorrect(false);
+    setShowWrongHint(false);
+    setIsRetrying(false);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+
     if (currentItem?.text) {
       speakText(currentItem.text);
     }
@@ -77,9 +86,23 @@ export const DictationPractice: React.FC = () => {
       soundEffects.playCorrect();
       setStreak(prev => prev + 1);
       setCompletedCount(prev => prev + 1);
+      setShowWrongHint(false);
     } else {
       soundEffects.playError();
       setStreak(0);
+      setShowWrongHint(true);
+
+      // Auto-hide wrong answer hint after 3 seconds to prompt recall memory!
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = setTimeout(() => {
+        setShowWrongHint(false);
+        setUserInput('');
+        setIsAnswered(false); // Enable input for re-typing from memory!
+        setIsRetrying(true);
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 3000);
     }
   };
 
@@ -97,7 +120,7 @@ export const DictationPractice: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1700px] mx-auto px-4 lg:px-8 py-6">
-      {/* 3-COLUMN BALANCED LAYOUT: ASIDE LEFT (3) | MAIN WORKSPACE (6) | ASIDE RIGHT (3) */}
+      {/* 3-COLUMN BALANCED LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* ASIDE LEFT: Danh sách bài học được assign */}
@@ -113,7 +136,6 @@ export const DictationPractice: React.FC = () => {
               </p>
             </div>
 
-            {/* List Catalog */}
             <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
               {lists.map(l => {
                 const isSelected = !isSrsMode && activeList?.id === l.id;
@@ -199,7 +221,7 @@ export const DictationPractice: React.FC = () => {
                 />
               </div>
 
-              {/* Audio Player */}
+              {/* Audio Player & Controls */}
               <div className="flex flex-col items-center justify-center space-y-4 text-center">
                 <button
                   onClick={() => speakText(currentItem.text)}
@@ -230,28 +252,32 @@ export const DictationPractice: React.FC = () => {
                   </select>
                 </div>
 
-                {/* VIETNAMESE MEANING TEXTBOX */}
-                <div className="w-full max-w-md mx-auto p-3.5 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl text-center shadow-xs">
+                {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX */}
+                <div className="w-full max-w-xl mx-auto p-4 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 dark:from-amber-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 border border-amber-500/20 dark:border-amber-500/30 rounded-2xl text-center shadow-xs">
                   <div className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider mb-0.5">
                     Nghĩa Tiếng Việt
                   </div>
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  <div className="text-base font-bold text-slate-900 dark:text-slate-100">
                     {currentItem.vi || 'Chưa có bản dịch'}
                   </div>
                 </div>
               </div>
 
-              {/* Spelling Input Form */}
-              <form onSubmit={handleSubmitSpelling} className="max-w-md mx-auto space-y-4">
+              {/* EXPANDED SPELLING INPUT FORM & WRONG ANSWER FEEDBACK */}
+              <form onSubmit={handleSubmitSpelling} className="w-full max-w-xl mx-auto space-y-4">
                 <div className="relative">
                   <input
                     ref={inputRef}
                     type="text"
                     autoFocus
-                    disabled={isAnswered}
+                    disabled={isAnswered && isCorrect}
                     value={userInput}
                     onChange={e => setUserInput(e.target.value)}
-                    placeholder="Nhập lại chính tả tiếng Anh bạn nghe được..."
+                    placeholder={
+                      isRetrying
+                        ? "Gõ lại từ/câu bạn vừa nhớ từ gợi ý..."
+                        : "Nhập lại chính tả tiếng Anh bạn nghe được..."
+                    }
                     className={`w-full px-5 py-4 text-center text-lg font-black rounded-2xl border-2 transition-all focus:outline-none ${
                       isAnswered
                         ? isCorrect
@@ -272,57 +298,88 @@ export const DictationPractice: React.FC = () => {
                   </button>
                 ) : (
                   <div className="space-y-4 animate-in fade-in duration-200">
-                    <div className={`p-4 rounded-2xl flex items-center gap-3 border ${
-                      isCorrect
-                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
-                    }`}>
-                      {isCorrect ? <CheckCircle2 className="w-6 h-6 shrink-0" /> : <XCircle className="w-6 h-6 shrink-0" />}
-                      <div>
-                        <div className="font-black text-sm">
-                          {isCorrect ? 'Chính xác! Bạn làm rất tốt!' : `Chưa chính xác. Đáp án đúng: "${currentItem.text}"`}
-                        </div>
-                        <div className="text-xs opacity-80 mt-0.5">
-                          Nghĩa Tiếng Việt: {currentItem.vi}
+                    
+                    {/* CORRECT FEEDBACK BANNER */}
+                    {isCorrect && (
+                      <div className="p-4 rounded-2xl flex items-center gap-3 border bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="w-6 h-6 shrink-0" />
+                        <div>
+                          <div className="font-black text-sm">Chính xác! Bạn làm rất tốt!</div>
+                          <div className="text-xs opacity-80 mt-0.5">
+                            Nghĩa Tiếng Việt: {currentItem.vi}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-2">
-                      <div className="text-xs font-black text-slate-500 dark:text-slate-400 text-center uppercase tracking-wider">
-                        Đánh giá mức độ thuộc (Spaced Repetition SM-2)
+                    {/* WRONG ANSWER HINT BANNER WITH 3-SECOND AUTO-HIDE & ANTI-COPY-PASTE PROTECTION */}
+                    {!isCorrect && showWrongHint && (
+                      <div className="w-full max-w-xl mx-auto p-4 rounded-2xl flex items-center gap-3 border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-md animate-in fade-in zoom-in-95 duration-150">
+                        <XCircle className="w-6 h-6 shrink-0 text-rose-500" />
+                        
+                        {/* ANTI-COPY-PASTE & UNSELECTABLE CONTAINER */}
+                        <div 
+                          className="flex-1 select-none pointer-events-none"
+                          style={{
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none'
+                          }}
+                          onCopy={e => e.preventDefault()}
+                          onCut={e => e.preventDefault()}
+                          onContextMenu={e => e.preventDefault()}
+                        >
+                          <div className="font-black text-sm">
+                            Chưa chính xác. Đáp án đúng: <span className="font-mono font-black underline tracking-wide">"{currentItem.text}"</span>
+                          </div>
+                          <div className="text-xs font-bold opacity-80 mt-0.5 flex items-center gap-1">
+                            <EyeOff className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Gợi ý sẽ tự động ẩn sau 3 giây để bạn nhớ lại & gõ lại!</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSrsGrade('again')}
-                          className="py-2.5 rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                          Chưa thuộc (Again)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSrsGrade('hard')}
-                          className="py-2.5 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                          Hơi khó (Hard)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSrsGrade('good')}
-                          className="py-2.5 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                          Khá tốt (Good)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSrsGrade('easy')}
-                          className="py-2.5 rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                        >
-                          Rất dễ (Easy)
-                        </button>
+                    )}
+
+                    {/* SRS SM-2 GRADING BUTTONS WHEN CORRECT */}
+                    {isCorrect && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-black text-slate-500 dark:text-slate-400 text-center uppercase tracking-wider">
+                          Đánh giá mức độ thuộc (Spaced Repetition SM-2)
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSrsGrade('again')}
+                            className="py-2.5 rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          >
+                            Chưa thuộc (Again)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSrsGrade('hard')}
+                            className="py-2.5 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          >
+                            Hơi khó (Hard)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSrsGrade('good')}
+                            className="py-2.5 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          >
+                            Khá tốt (Good)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSrsGrade('easy')}
+                            className="py-2.5 rounded-xl bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 font-black text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          >
+                            Rất dễ (Easy)
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
                   </div>
                 )}
               </form>
@@ -343,7 +400,6 @@ export const DictationPractice: React.FC = () => {
               </p>
             </div>
 
-            {/* SRS Main Card Button */}
             <div
               onClick={() => {
                 soundEffects.playPop();
@@ -370,7 +426,6 @@ export const DictationPractice: React.FC = () => {
               </div>
             </div>
 
-            {/* List of SRS Review Items */}
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
               {reviewItems.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">

@@ -20,7 +20,8 @@ import {
   Volume2,
   Search,
   X,
-  ListMusic
+  ListMusic,
+  UploadCloud
 } from 'lucide-react';
 
 export const LessonComposer: React.FC = () => {
@@ -46,6 +47,96 @@ export const LessonComposer: React.FC = () => {
   const [stagedItems, setStagedItems] = useState<PracticeItem[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Sub-Tab state: 'text' (Nhập nhanh văn bản) vs 'images' (Upload/Drag Drop nhiều ảnh max 10)
+  const [composerInputTab, setComposerInputTab] = useState<'text' | 'images'>('text');
+
+  // Tab 2: Batch Upload Image State
+  interface StagedImageUpload {
+    id: string;
+    file: File;
+    previewUrl: string;
+    suggestedText: string;
+    vi: string;
+    ipa: string;
+  }
+
+  const [uploadedImages, setUploadedImages] = useState<StagedImageUpload[]>([]);
+  const [isDraggingImages, setIsDraggingImages] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
+
+  const handleImageFilesSelect = (files: FileList | File[]) => {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const cleanText = rawName.replace(/[-_]/g, ' ').replace(/\d+/g, '').trim();
+
+        setUploadedImages(prev => {
+          if (prev.length >= 10) return prev;
+          return [
+            ...prev,
+            {
+              id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              file,
+              previewUrl: dataUrl,
+              suggestedText: cleanText || 'word',
+              vi: '',
+              ipa: ''
+            }
+          ];
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveUploadedImage = (id: string) => {
+    soundEffects.playPop();
+    setUploadedImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  const handleUpdateUploadedImageText = (id: string, newText: string) => {
+    setUploadedImages(prev => prev.map(img => img.id === id ? { ...img, suggestedText: newText } : img));
+  };
+
+  const handleBatchProcessImages = async () => {
+    if (uploadedImages.length === 0) return;
+    soundEffects.playPop();
+    setIsProcessingImages(true);
+
+    try {
+      const newItems: PracticeItem[] = [];
+
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const img = uploadedImages[i];
+        const text = img.suggestedText.trim();
+        if (!text) continue;
+
+        const vi = await translateTextMyMemory(text);
+
+        newItems.push({
+          id: `item-${Date.now()}-${i}`,
+          text: text,
+          vi: vi || img.vi || text,
+          ipa: img.ipa || '',
+          imageUrl: img.previewUrl,
+          note: `Từ ảnh: ${img.file.name}`
+        });
+      }
+
+      setStagedItems(prev => [...prev, ...newItems]);
+      setUploadedImages([]);
+      soundEffects.playCorrect();
+    } catch (err) {
+      console.warn('Lỗi xử lý ảnh:', err);
+    } finally {
+      setIsProcessingImages(false);
+    }
+  };
 
   // Search & Filter state for Aside Left (Kho bài học)
   const [searchQuery, setSearchQuery] = useState('');
@@ -520,28 +611,179 @@ export const LessonComposer: React.FC = () => {
               </div>
             </div>
 
-            {/* Smart NLP & Batch Paste Section */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-              <label className="block text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Wand2 className="w-4 h-4 text-emerald-500" />
-                <span>Nhập nhanh văn bản (Tự động tách câu & dịch MyMemory)</span>
-              </label>
-              <textarea 
-                rows={3} 
-                value={rawText} 
-                onChange={e => setRawText(e.target.value)} 
-                placeholder={listType === 'words' ? "Dán danh sách từ phân tách bằng dấu phẩy hoặc xuống dòng:\nhobby, collecting stamps, gardening" : "Dán đoạn văn tiếng Anh:\nWhat is your favorite hobby? I enjoy reading books."}
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
-              />
-              <button 
-                type="button" 
-                onClick={handleParseAndTranslate} 
-                disabled={isTranslating || !rawText.trim()} 
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-slate-800 transition-colors"
-              >
-                <Languages className="w-4 h-4 text-emerald-400" /> 
-                <span>{isTranslating ? 'Đang phân tích & dịch...' : 'Tách Văn Bản & Dịch Tự Động'}</span>
-              </button>
+            {/* SUB-TABS: TAB 1 (NHẬP VĂN BẢN) vs TAB 2 (UPLOAD RẤT NHIỀU ẢNH MAX 10) */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              
+              {/* Tab Selector Headers */}
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setComposerInputTab('text')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                    composerInputTab === 'text'
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>TAB 1: Nhập Nhanh Văn Bản (Tách câu & Dịch MyMemory)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setComposerInputTab('images')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                    composerInputTab === 'images'
+                      ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                  }`}
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>TAB 2: Upload / Drag Drop Nhiều Ảnh (Tối đa 10 hình)</span>
+                  {uploadedImages.length > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] bg-amber-400 text-slate-950 rounded-full font-mono font-bold">
+                      {uploadedImages.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* TAB 1: TEXT PASTE & AUTO PARSE */}
+              {composerInputTab === 'text' && (
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <label className="block text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-emerald-500" />
+                    <span>Dán danh sách từ hoặc văn bản tiếng Anh</span>
+                  </label>
+                  <textarea 
+                    rows={3} 
+                    value={rawText} 
+                    onChange={e => setRawText(e.target.value)} 
+                    placeholder={listType === 'words' ? "Dán danh sách từ phân tách bằng dấu phẩy hoặc xuống dòng:\nhobby, collecting stamps, gardening" : "Dán đoạn văn tiếng Anh:\nWhat is your favorite hobby? I enjoy reading books."}
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={handleParseAndTranslate} 
+                    disabled={isTranslating || !rawText.trim()} 
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-slate-800 transition-colors"
+                  >
+                    <Languages className="w-4 h-4 text-emerald-400" /> 
+                    <span>{isTranslating ? 'Đang phân tích & dịch...' : 'Tách Văn Bản & Dịch Tự Động'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* TAB 2: MULTI-IMAGE DRAG & DROP UPLOAD (MAX 10) */}
+              {composerInputTab === 'images' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  
+                  {/* Drag & Drop Upload Zone */}
+                  <div
+                    onDragOver={e => { e.preventDefault(); setIsDraggingImages(true); }}
+                    onDragLeave={() => setIsDraggingImages(false)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      setIsDraggingImages(false);
+                      if (e.dataTransfer.files) handleImageFilesSelect(e.dataTransfer.files);
+                    }}
+                    className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
+                      isDraggingImages
+                        ? 'border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/40'
+                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-cyan-500/60'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      id="image-upload-input"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => {
+                        if (e.target.files) handleImageFilesSelect(e.target.files);
+                      }}
+                    />
+                    <label htmlFor="image-upload-input" className="cursor-pointer space-y-2 block">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 mx-auto flex items-center justify-center">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white">
+                          Kéo thả nhiều ảnh vào đây hoặc <span className="text-cyan-600 underline">bấm để chọn file ảnh</span>
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                          Hỗ trợ tối đa 10 bức hình (PNG, JPG, WEBP, GIF). Tên file ảnh sẽ tự động được sử dụng làm từ/câu gợi ý!
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Staged Uploaded Images List */}
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                          Ảnh đã tải lên ({uploadedImages.length}/10 bức hình):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setUploadedImages([])}
+                          className="text-[11px] font-bold text-rose-500 hover:underline"
+                        >
+                          Xóa tất cả ảnh
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {uploadedImages.map((img) => (
+                          <div key={img.id} className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex items-center gap-3 relative group">
+                            <img
+                              src={img.previewUrl}
+                              alt={img.suggestedText}
+                              className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="text-[9px] font-mono text-slate-400 truncate">{img.file.name}</div>
+                              <input
+                                type="text"
+                                value={img.suggestedText}
+                                onChange={e => handleUpdateUploadedImageText(img.id, e.target.value)}
+                                placeholder="Từ / Cần dịch (EN)"
+                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveUploadedImage(img.id)}
+                              className="p-1 text-slate-400 hover:text-rose-500 rounded-lg shrink-0"
+                              title="Gỡ ảnh này"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Process Images Button */}
+                      <button
+                        type="button"
+                        onClick={handleBatchProcessImages}
+                        disabled={isProcessingImages}
+                        className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>
+                          {isProcessingImages 
+                            ? 'Đang phân tích ảnh, tạo phiên âm & dịch tự động...' 
+                            : `⚡ Phân Tích ${uploadedImages.length} Ảnh, Tạo Phiên Âm & Dịch Tự Động`}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
             </div>
 
             {/* STAGED ITEMS TABLE GRID LAYOUT: Từ/Câu | IPA | Nghĩa | Note | Hình ảnh */}

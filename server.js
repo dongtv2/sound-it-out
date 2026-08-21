@@ -17,6 +17,17 @@ app.use(express.json());
 const dbPath = join(__dirname, 'sound_it_out.db');
 const db = new DatabaseSync(dbPath);
 
+try {
+  db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
+    PRAGMA busy_timeout = 10000;
+    PRAGMA wal_autocheckpoint = 1000;
+  `);
+} catch (e) {
+  console.warn('Pragma init warning:', e);
+}
+
 // Initialize Tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

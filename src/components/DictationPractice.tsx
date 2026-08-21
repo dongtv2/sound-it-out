@@ -49,11 +49,17 @@ export const DictationPractice: React.FC = () => {
   const [streak, setStreak] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [imgError, setImgError] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentItem = practiceItems[currentIndex] || { text: 'Welcome', vi: 'Chào mừng' };
+
+  // Reset imgError when current item changes
+  useEffect(() => {
+    setImgError(false);
+  }, [currentIndex, currentItem.id, currentItem.imageUrl]);
 
   // Filtered Lists Logic
   const filteredLists = useMemo(() => {
@@ -400,10 +406,15 @@ export const DictationPractice: React.FC = () => {
 
                 {/* EXPANDED FULL-WIDTH VIETNAMESE MEANING TEXTBOX & IPA & IMAGE */}
                 <div className="w-full max-w-xl mx-auto space-y-3">
-                  {/* Image Illustration if available */}
-                  {currentItem.imageUrl && (
+                  {/* Image Illustration if available and valid */}
+                  {currentItem.imageUrl && !imgError && (
                     <div className="w-full max-h-48 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md">
-                      <img src={currentItem.imageUrl} alt={currentItem.text} className="w-full h-full object-cover" />
+                      <img 
+                        src={currentItem.imageUrl} 
+                        alt={currentItem.text} 
+                        className="w-full h-full object-cover" 
+                        onError={() => setImgError(true)}
+                      />
                     </div>
                   )}
 

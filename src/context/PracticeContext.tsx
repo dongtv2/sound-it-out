@@ -61,9 +61,33 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ]);
 
       if (dbLists && dbLists.length > 0) {
-        setLists(dbLists);
+        const sanitizedLists = dbLists.map(l => ({
+          ...l,
+          items: (l.items || []).map(i => {
+            if (!i.vi) return i;
+            const matchSlash = i.vi.match(/(.*?)\s*\/([^\/]+)\/\s*(.*)/);
+            if (matchSlash) {
+              return {
+                ...i,
+                ipa: i.ipa || `/${matchSlash[2].trim()}/`,
+                vi: `${matchSlash[1]} ${matchSlash[3]}`.trim()
+              };
+            }
+            const matchUnclosed = i.vi.match(/(.*?)\s*\/([^\/]+)$/);
+            if (matchUnclosed) {
+              return {
+                ...i,
+                ipa: i.ipa || `/${matchUnclosed[2].trim()}/`,
+                vi: matchUnclosed[1].trim()
+              };
+            }
+            return i;
+          })
+        }));
+
+        setLists(sanitizedLists);
         if (!activeListId) {
-          setActiveListId(dbLists[0].id);
+          setActiveListId(sanitizedLists[0].id);
         }
       }
       if (dbCats) setCategories(dbCats);

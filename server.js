@@ -395,13 +395,43 @@ app.delete('/api/users/:uid', (req, res) => {
   res.json({ success: true });
 });
 
-// Practice Lists & Lesson Assignment APIs
 app.get('/api/lists', (req, res) => {
   const rows = db.prepare('SELECT * FROM practice_lists ORDER BY updatedAt DESC').all();
-  const lists = rows.map(r => ({
-    ...r,
-    items: JSON.parse(r.items || '[]')
-  }));
+  const lists = rows.map(r => {
+    let items = JSON.parse(r.items || '[]');
+
+    // Guarantee that every item has its IPA separated from VI
+    items = items.map(item => {
+      if (!item.vi) return item;
+
+      // Pattern 1: match /.../ in vi e.g. "Khí hậu /'klaɪ.mət/"
+      const matchSlash = item.vi.match(/(.*?)\s*\/([^\/]+)\/\s*(.*)/);
+      if (matchSlash) {
+        return {
+          ...item,
+          ipa: item.ipa || `/${matchSlash[2].trim()}/`,
+          vi: `${matchSlash[1]} ${matchSlash[3]}`.trim()
+        };
+      }
+
+      // Pattern 2: match unclosed /... at end e.g. "Dự báo thời tiết /'fɔː.kɑːs"
+      const matchUnclosed = item.vi.match(/(.*?)\s*\/([^\/]+)$/);
+      if (matchUnclosed) {
+        return {
+          ...item,
+          ipa: item.ipa || `/${matchUnclosed[2].trim()}/`,
+          vi: matchUnclosed[1].trim()
+        };
+      }
+
+      return item;
+    });
+
+    return {
+      ...r,
+      items
+    };
+  });
   res.json(lists);
 });
 

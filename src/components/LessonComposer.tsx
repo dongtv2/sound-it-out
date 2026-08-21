@@ -21,7 +21,11 @@ import {
   Search,
   X,
   ListMusic,
-  UploadCloud
+  UploadCloud,
+  BarChart3,
+  ArrowLeft,
+  FolderKanban,
+  Clock
 } from 'lucide-react';
 
 export const LessonComposer: React.FC = () => {
@@ -34,9 +38,13 @@ export const LessonComposer: React.FC = () => {
     addCategory, 
     deleteCategory, 
     translateTextMyMemory, 
+    fetchIpa,
     splitTextToPhrases 
   } = usePractice();
   const { user, familyUsers } = useAuth();
+
+  // Dashboard vs Form Editor Mode State
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [listName, setListName] = useState('');
@@ -47,6 +55,33 @@ export const LessonComposer: React.FC = () => {
   const [stagedItems, setStagedItems] = useState<PracticeItem[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Statistics Memos for Teacher Dashboard
+  const totalItemsCount = useMemo(() => {
+    return lists.reduce((acc, l) => acc + (l.items?.length || 0), 0);
+  }, [lists]);
+
+  const assignedListsCount = useMemo(() => {
+    return lists.filter(l => Boolean(l.learner && l.learner.trim())).length;
+  }, [lists]);
+
+  const wordListsCount = useMemo(() => {
+    return lists.filter(l => l.type === 'words').length;
+  }, [lists]);
+
+  const sentenceListsCount = useMemo(() => {
+    return lists.filter(l => l.type === 'sentences').length;
+  }, [lists]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    categories.forEach(c => { counts[c.slug] = 0; });
+    lists.forEach(l => {
+      const tag = l.tag || 'curriculum';
+      counts[tag] = (counts[tag] || 0) + 1;
+    });
+    return counts;
+  }, [lists, categories]);
   // Sub-Tab state: 'text' (Nhập nhanh văn bản) vs 'images' (Upload/Drag Drop nhiều ảnh max 10)
   const [composerInputTab, setComposerInputTab] = useState<'text' | 'images'>('text');
 
@@ -117,12 +152,13 @@ export const LessonComposer: React.FC = () => {
         if (!text) continue;
 
         const vi = await translateTextMyMemory(text);
+        const ipa = await fetchIpa(text);
 
         newItems.push({
           id: `item-${Date.now()}-${i}`,
           text: text,
           vi: vi || img.vi || text,
-          ipa: img.ipa || '',
+          ipa: ipa || img.ipa || '',
           imageUrl: img.previewUrl,
           note: `Từ ảnh: ${img.file.name}`
         });
@@ -175,6 +211,7 @@ export const LessonComposer: React.FC = () => {
     setAssignLearner('Bé Phúc Trí');
     setRawText('');
     setStagedItems([]);
+    setIsFormOpen(true);
   };
 
   const startEditList = (list: PracticeList) => {
@@ -186,6 +223,7 @@ export const LessonComposer: React.FC = () => {
     setAssignLearner(list.learner || '');
     setStagedItems(list.items || []);
     setRawText('');
+    setIsFormOpen(true);
   };
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -218,11 +256,12 @@ export const LessonComposer: React.FC = () => {
       for (let i = 0; i < phrases.length; i++) {
         const p = phrases[i];
         const vi = await translateTextMyMemory(p);
+        const ipa = await fetchIpa(p);
         parsed.push({
           id: `item-${Date.now()}-${i}`,
           text: p,
           vi: vi || p,
-          ipa: '',
+          ipa: ipa || '',
           imageUrl: '',
           note: ''
         });
@@ -309,8 +348,9 @@ export const LessonComposer: React.FC = () => {
 
     setTimeout(() => {
       setSuccessMessage(null);
-      startCreateNew();
-    }, 2000);
+      setEditingListId(null);
+      setIsFormOpen(false);
+    }, 1500);
   };
 
   return (
@@ -518,406 +558,621 @@ export const LessonComposer: React.FC = () => {
           </div>
         </aside>
 
-        {/* MAIN STAGE: EDITOR FORM WITH TABLE GRID FOR STAGED ITEMS */}
+        {/* MAIN STAGE: TEACHER DASHBOARD (DEFAULT) VS EDITOR FORM (WHEN NEW/EDIT IS CLICKED) */}
         <div className="lg:col-span-8 space-y-6">
-          <form onSubmit={handleSaveList} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
-            
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-emerald-500" />
-                <span>{editingListId ? 'Chỉnh Sửa Bài Học SQLite' : 'Soạn Bài Học Mới'}</span>
-              </h2>
-              {editingListId && (
-                <button
-                  type="button"
-                  onClick={startCreateNew}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  Hủy sửa
-                </button>
-              )}
-            </div>
-
-            {/* Form Top Metadata Fields (Clean 2x2 Grid) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Tên bài học</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={listName} 
-                  onChange={e => setListName(e.target.value)} 
-                  placeholder="Ví dụ: Unit 1: Hobbies"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Loại nội dung</label>
-                <select 
-                  value={listType} 
-                  onChange={e => setListType(e.target.value as PracticeItemType)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
-                >
-                  <option value="words">Từ vựng (Words & Phonics)</option>
-                  <option value="sentences">Mẫu câu (Sentences)</option>
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300">Phân loại bài học (Category Tag)</label>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsCatModalOpen(true)} 
-                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                  >
-                    + Quản lý Phân loại
-                  </button>
-                </div>
-                <select 
-                  value={listTag} 
-                  onChange={e => setListTag(e.target.value)} 
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
-                >
-                  {categories.map(c => (
-                    <option key={c.id} value={c.slug}>{c.name} ({c.description || c.slug})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-cyan-500" />
-                    <span>Giao bài cho học sinh cụ thể (SQLite)</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    ({familyUsers.length} tài khoản trong DB)
-                  </span>
-                </label>
-                <select
-                  value={assignLearner}
-                  onChange={e => setAssignLearner(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value="">-- Tất cả học sinh (Mặc định) --</option>
-                  {familyUsers.map(u => (
-                    <option key={u.uid} value={u.displayName}>
-                      {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* SUB-TABS: NHẬP VĂN BẢN vs UPLOAD RẤT NHIỀU ẢNH MAX 10 */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+          {!isFormOpen ? (
+            /* TEACHER DASHBOARD THỐNG KÊ KHO BÀI HỌC */
+            <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Tab Selector Headers */}
-              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setComposerInputTab('text')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-                    composerInputTab === 'text'
-                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
-                  }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Nhập Nhanh Văn Bản (Tách câu & Dịch MyMemory)</span>
-                </button>
+              {/* Hero Welcome Banner */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden">
+                <div className="space-y-1.5 z-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-amber-200">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                    <span>Bảng Điều Khiển Giáo Viên / Phụ Huynh</span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+                    Kho Bài Học & Giao Bài Thông Minh
+                  </h1>
+                  <p className="text-xs font-medium text-emerald-100 max-w-xl leading-relaxed">
+                    Tổng quan toàn bộ CSDL bài học SQLite, theo dõi tiến độ giao bài và thống kê chủ đề học tập gia đình.
+                  </p>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setComposerInputTab('images')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-                    composerInputTab === 'images'
-                      ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
-                  }`}
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  <span>Upload / Drag Drop Nhiều Ảnh (Tối đa 10 hình)</span>
-                  {uploadedImages.length > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] bg-amber-400 text-slate-950 rounded-full font-mono font-bold">
-                      {uploadedImages.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* TAB 1: TEXT PASTE & AUTO PARSE */}
-              {composerInputTab === 'text' && (
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <label className="block text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <Wand2 className="w-4 h-4 text-emerald-500" />
-                    <span>Dán danh sách từ hoặc văn bản tiếng Anh</span>
-                  </label>
-                  <textarea 
-                    rows={3} 
-                    value={rawText} 
-                    onChange={e => setRawText(e.target.value)} 
-                    placeholder={listType === 'words' ? "Dán danh sách từ phân tách bằng dấu phẩy hoặc xuống dòng:\nhobby, collecting stamps, gardening" : "Dán đoạn văn tiếng Anh:\nWhat is your favorite hobby? I enjoy reading books."}
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
-                  />
-                  <button 
-                    type="button" 
-                    onClick={handleParseAndTranslate} 
-                    disabled={isTranslating || !rawText.trim()} 
-                    className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-slate-800 transition-colors"
+                <div className="flex items-center gap-2 z-10 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={startCreateNew}
+                    className="px-4 py-2.5 rounded-2xl bg-white text-slate-900 font-black text-xs flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
                   >
-                    <Languages className="w-4 h-4 text-emerald-400" /> 
-                    <span>{isTranslating ? 'Đang phân tích & dịch...' : 'Tách Văn Bản & Dịch Tự Động'}</span>
+                    <Plus className="w-4 h-4 text-emerald-600" />
+                    <span>+ Soạn Bài Học Mới</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCatModalOpen(true)}
+                    className="px-3.5 py-2.5 rounded-2xl bg-white/15 backdrop-blur-md text-white font-bold text-xs flex items-center gap-1.5 hover:bg-white/25 transition-all cursor-pointer border border-white/20"
+                  >
+                    <Tag className="w-4 h-4 text-amber-300" />
+                    <span>Phân Loại</span>
                   </button>
                 </div>
-              )}
+              </div>
 
-              {/* TAB 2: MULTI-IMAGE DRAG & DROP UPLOAD (MAX 10) */}
-              {composerInputTab === 'images' && (
-                <div className="space-y-4 animate-in fade-in duration-150">
-                  
-                  {/* Drag & Drop Upload Zone */}
-                  <div
-                    onDragOver={e => { e.preventDefault(); setIsDraggingImages(true); }}
-                    onDragLeave={() => setIsDraggingImages(false)}
-                    onDrop={e => {
-                      e.preventDefault();
-                      setIsDraggingImages(false);
-                      if (e.dataTransfer.files) handleImageFilesSelect(e.dataTransfer.files);
-                    }}
-                    className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
-                      isDraggingImages
-                        ? 'border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/40'
-                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-cyan-500/60'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      id="image-upload-input"
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e => {
-                        if (e.target.files) handleImageFilesSelect(e.target.files);
-                      }}
-                    />
-                    <label htmlFor="image-upload-input" className="cursor-pointer space-y-2 block">
-                      <div className="w-12 h-12 rounded-2xl bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 mx-auto flex items-center justify-center">
-                        <UploadCloud className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-black text-slate-900 dark:text-white">
-                          Kéo thả nhiều ảnh vào đây hoặc <span className="text-cyan-600 underline">bấm để chọn file ảnh</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">
-                          Hỗ trợ tối đa 10 bức hình (PNG, JPG, WEBP, GIF). Tên file ảnh sẽ tự động được sử dụng làm từ/câu gợi ý!
-                        </div>
-                      </div>
-                    </label>
+              {/* KPI Stats 4 Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                
+                {/* KPI 1 */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500">Tổng Số Bài Học</span>
+                    <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    {lists.length} <span className="text-xs font-bold text-slate-400">bài</span>
+                  </div>
+                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span>{wordListsCount} từ vựng</span> • <span>{sentenceListsCount} mẫu câu</span>
+                  </div>
+                </div>
+
+                {/* KPI 2 */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500">Tổng Mục Từ / Câu</span>
+                    <div className="p-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-500">
+                      <ListMusic className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    {totalItemsCount} <span className="text-xs font-bold text-slate-400">mục</span>
+                  </div>
+                  <div className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
+                    Đã có IPA & dịch tiếng Việt
+                  </div>
+                </div>
+
+                {/* KPI 3 */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500">Bài Tập Đã Giao</span>
+                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-500">
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    {assignedListsCount} <span className="text-xs font-bold text-slate-400">bài</span>
+                  </div>
+                  <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                    Phân công học sinh cụ thể
+                  </div>
+                </div>
+
+                {/* KPI 4 */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-500">Chủ Đề Phân Loại</span>
+                    <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-500">
+                      <Tag className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">
+                    {categories.length} <span className="text-xs font-bold text-slate-400">chủ đề</span>
+                  </div>
+                  <div className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                    Oxford 3000, Phonics, Music...
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Section: Category Distribution & Quick Recent Lessons Table */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                {/* Category Breakdown (Col 5) */}
+                <div className="md:col-span-5 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
+                      <FolderKanban className="w-4 h-4 text-emerald-500" />
+                      <span>Thống Kê Theo Chủ Đề</span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsCatModalOpen(true)}
+                      className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      + Quản lý
+                    </button>
                   </div>
 
-                  {/* Staged Uploaded Images List */}
-                  {uploadedImages.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                          Ảnh đã tải lên ({uploadedImages.length}/10 bức hình):
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setUploadedImages([])}
-                          className="text-[11px] font-bold text-rose-500 hover:underline"
-                        >
-                          Xóa tất cả ảnh
-                        </button>
-                      </div>
+                  <div className="space-y-3">
+                    {categories.map(c => {
+                      const count = categoryCounts[c.slug] || 0;
+                      const percent = lists.length > 0 ? Math.round((count / lists.length) * 100) : 0;
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {uploadedImages.map((img) => (
-                          <div key={img.id} className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex items-center gap-3 relative group">
-                            <img
-                              src={img.previewUrl}
-                              alt={img.suggestedText}
-                              className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
+                      return (
+                        <div key={c.id} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="text-slate-800 dark:text-slate-200">{c.name}</span>
+                            <span className="text-slate-400 font-mono text-[11px]">{count} bài ({percent}%)</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300"
+                              style={{ width: `${percent}%` }}
                             />
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <div className="text-[9px] font-mono text-slate-400 truncate">{img.file.name}</div>
-                              <input
-                                type="text"
-                                value={img.suggestedText}
-                                onChange={e => handleUpdateUploadedImageText(img.id, e.target.value)}
-                                placeholder="Từ / Cần dịch (EN)"
-                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"
-                              />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Lessons Table (Col 7) */}
+                <div className="md:col-span-7 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-cyan-500" />
+                      <span>Bài Học Mới Nhất ({lists.length})</span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={startCreateNew}
+                      className="px-2.5 py-1 rounded-xl bg-emerald-500 text-white font-black text-[11px] flex items-center gap-1 shadow-xs hover:bg-emerald-600 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tạo Mới</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {lists.slice(0, 6).map(l => {
+                      const cleanName = l.name.replace(/^Langmaster:\s*/i, '').replace(/^3000 words:\s*/i, '');
+                      return (
+                        <div
+                          key={l.id}
+                          className="p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/50 hover:border-slate-300 transition-all flex items-center justify-between gap-3"
+                        >
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                              {cleanName}
                             </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-bold">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
+                                {l.type === 'words' ? 'Từ vựng' : 'Mẫu câu'} ({l.items?.length || 0})
+                              </span>
+                              {l.learner && (
+                                <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
+                                  👤 {l.learner}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               type="button"
-                              onClick={() => handleRemoveUploadedImage(img.id)}
-                              className="p-1 text-slate-400 hover:text-rose-500 rounded-lg shrink-0"
-                              title="Gỡ ảnh này"
+                              onClick={() => startEditList(l)}
+                              className="px-2.5 py-1 rounded-xl bg-slate-900 dark:bg-slate-800 text-white font-black text-[11px] hover:bg-slate-800 transition-all flex items-center gap-1 cursor-pointer"
                             >
-                              <X className="w-4 h-4" />
+                              <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Sửa</span>
                             </button>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Process Images Button */}
-                      <button
-                        type="button"
-                        onClick={handleBatchProcessImages}
-                        disabled={isProcessingImages}
-                        className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>
-                          {isProcessingImages 
-                            ? 'Đang phân tích ảnh, tạo phiên âm & dịch tự động...' 
-                            : `⚡ Phân Tích ${uploadedImages.length} Ảnh, Tạo Phiên Âm & Dịch Tự Động`}
-                        </span>
-                      </button>
-                    </div>
-                  )}
-
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
+
+              </div>
 
             </div>
-
-            {/* STAGED ITEMS TABLE GRID LAYOUT: Từ/Câu | IPA | Nghĩa | Note | Hình ảnh */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <span>Danh Sách Từ / Câu Trong Bài ({stagedItems.length})</span>
-                </h3>
-                <button 
-                  type="button" 
-                  onClick={handleAddManualItem} 
-                  className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-black flex items-center gap-1 shadow-xs hover:bg-emerald-600 transition-colors cursor-pointer"
+          ) : (
+            /* EDITOR FORM (CHỈ HIỆN THỊ KHI BẤM NEW HOẶC EDIT) */
+            <form onSubmit={handleSaveList} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 animate-in fade-in duration-200">
+              
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-emerald-500" />
+                  <span>{editingListId ? 'Chỉnh Sửa Bài Học SQLite' : 'Soạn Bài Học Mới'}</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEffects.playPop();
+                    setIsFormOpen(false);
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm Ô Thủ Công</span>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại Dashboard</span>
                 </button>
               </div>
 
-              {/* Table Grid Structure */}
-              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
-                <div className="max-h-[460px] overflow-y-auto overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black uppercase text-[10px] tracking-wider sticky top-0 z-10">
-                      <tr>
-                        <th className="py-3 px-3 text-center w-10">#</th>
-                        <th className="py-3 px-3 min-w-[160px]">Từ / Câu (EN)</th>
-                        <th className="py-3 px-3 min-w-[120px]">Phiên Âm (IPA)</th>
-                        <th className="py-3 px-3 min-w-[160px]">Bản Dịch (VI)</th>
-                        <th className="py-3 px-3 min-w-[140px]">Ghi Chú (Note)</th>
-                        <th className="py-3 px-3 min-w-[160px]">Hình Ảnh (URL)</th>
-                        <th className="py-3 px-3 text-center w-12">Xoá</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-bold">
-                      {stagedItems.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="py-8 text-center text-slate-400 text-xs font-medium">
-                            Chưa có từ / câu nào. Hãy dán đoạn văn phía trên hoặc nhấn "Thêm Ô Thủ Công"!
-                          </td>
-                        </tr>
-                      ) : (
-                        stagedItems.map((item, idx) => (
-                          <tr key={item.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-950/80 transition-colors">
-                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-400">{idx + 1}</td>
-                            <td className="py-2 px-2">
-                              <input
-                                type="text"
-                                value={item.text}
-                                onChange={e => handleUpdateStagedItem(idx, 'text', e.target.value)}
-                                placeholder="Tiếng Anh (star)"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                            </td>
-                            <td className="py-2 px-2">
-                              <input
-                                type="text"
-                                value={item.ipa || ''}
-                                onChange={e => handleUpdateStagedItem(idx, 'ipa', e.target.value)}
-                                placeholder="IPA (/stɑːr/)"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-amber-500"
-                              />
-                            </td>
-                            <td className="py-2 px-2">
-                              <input
-                                type="text"
-                                value={item.vi || ''}
-                                onChange={e => handleUpdateStagedItem(idx, 'vi', e.target.value)}
-                                placeholder="Tiếng Việt (ngôi sao)"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                            </td>
-                            <td className="py-2 px-2">
-                              <input
-                                type="text"
-                                value={item.note || ''}
-                                onChange={e => handleUpdateStagedItem(idx, 'note', e.target.value)}
-                                placeholder="Ghi chú / Mẹo"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="py-2 px-2">
-                              <div className="flex items-center gap-1.5">
-                                {item.imageUrl ? (
-                                  <img 
-                                    src={item.imageUrl} 
-                                    alt={item.text} 
-                                    className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-800 shrink-0" 
-                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                  />
-                                ) : (
-                                  <div className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 text-slate-400">
-                                    <ImageIcon className="w-3.5 h-3.5" />
-                                  </div>
-                                )}
-                                <input
-                                  type="text"
-                                  value={item.imageUrl || ''}
-                                  onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)}
-                                  placeholder="URL ảnh (hoặc để trống)"
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                              </div>
-                            </td>
-                            <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveStagedItem(idx)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
-                                title="Xoá hàng"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+              {/* Form Top Metadata Fields (Clean 2x2 Grid) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Tên bài học</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={listName} 
+                    onChange={e => setListName(e.target.value)} 
+                    placeholder="Ví dụ: Unit 1: Hobbies"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5">Loại nội dung</label>
+                  <select 
+                    value={listType} 
+                    onChange={e => setListType(e.target.value as PracticeItemType)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="words">Từ vựng (Words & Phonics)</option>
+                    <option value="sentences">Mẫu câu (Sentences)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black text-slate-700 dark:text-slate-300">Phân loại bài học (Category Tag)</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsCatModalOpen(true)} 
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    >
+                      + Quản lý Phân loại
+                    </button>
+                  </div>
+                  <select 
+                    value={listTag} 
+                    onChange={e => setListTag(e.target.value)} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    {categories.map(c => (
+                      <option key={c.id} value={c.slug}>{c.name} ({c.description || c.slug})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-cyan-500" />
+                      <span>Giao bài cho học sinh cụ thể (SQLite)</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      ({familyUsers.length} tài khoản trong DB)
+                    </span>
+                  </label>
+                  <select
+                    value={assignLearner}
+                    onChange={e => setAssignLearner(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="">-- Tất cả học sinh (Mặc định) --</option>
+                    {familyUsers.map(u => (
+                      <option key={u.uid} value={u.displayName}>
+                        {u.displayName} ({u.email} - {u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Admin'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            </div>
 
-            {/* Save Submit Button */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <button 
-                type="submit" 
-                disabled={stagedItems.length === 0 || !listName.trim()} 
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" /> 
-                <span>{editingListId ? 'Lưu Cập Nhật Bài Học' : 'Lưu Bài Học Vào SQLite DB'}</span>
-              </button>
-            </div>
-          </form>
+              {/* SUB-TABS: NHẬP VĂN BẢN vs UPLOAD RẤT NHIỀU ẢNH MAX 10 */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                
+                {/* Tab Selector Headers */}
+                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setComposerInputTab('text')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                      composerInputTab === 'text'
+                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Nhập Nhanh Văn Bản (Tách câu & Dịch MyMemory)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setComposerInputTab('images')}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                      composerInputTab === 'images'
+                        ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                    }`}
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>Upload / Drag Drop Nhiều Ảnh (Tối đa 10 hình)</span>
+                    {uploadedImages.length > 0 && (
+                      <span className="px-2 py-0.5 text-[10px] bg-amber-400 text-slate-950 rounded-full font-mono font-bold">
+                        {uploadedImages.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* TAB 1: TEXT PASTE & AUTO PARSE */}
+                {composerInputTab === 'text' && (
+                  <div className="space-y-3 animate-in fade-in duration-150">
+                    <label className="block text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <Wand2 className="w-4 h-4 text-emerald-500" />
+                      <span>Dán danh sách từ hoặc văn bản tiếng Anh</span>
+                    </label>
+                    <textarea 
+                      rows={3} 
+                      value={rawText} 
+                      onChange={e => setRawText(e.target.value)} 
+                      placeholder={listType === 'words' ? "Dán danh sách từ phân tách bằng dấu phẩy hoặc xuống dòng:\nhobby, collecting stamps, gardening" : "Dán đoạn văn tiếng Anh:\nWhat is your favorite hobby? I enjoy reading books."}
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleParseAndTranslate} 
+                      disabled={isTranslating || !rawText.trim()} 
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-slate-800 transition-colors"
+                    >
+                      <Languages className="w-4 h-4 text-emerald-400" /> 
+                      <span>{isTranslating ? 'Đang phân tích & dịch...' : 'Tách Văn Bản & Dịch Tự Động'}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* TAB 2: MULTI-IMAGE DRAG & DROP UPLOAD (MAX 10) */}
+                {composerInputTab === 'images' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    
+                    {/* Drag & Drop Upload Zone */}
+                    <div
+                      onDragOver={e => { e.preventDefault(); setIsDraggingImages(true); }}
+                      onDragLeave={() => setIsDraggingImages(false)}
+                      onDrop={e => {
+                        e.preventDefault();
+                        setIsDraggingImages(false);
+                        if (e.dataTransfer.files) handleImageFilesSelect(e.dataTransfer.files);
+                      }}
+                      className={`p-6 border-2 border-dashed rounded-2xl text-center transition-all cursor-pointer ${
+                        isDraggingImages
+                          ? 'border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/40'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-cyan-500/60'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="image-upload-input"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          if (e.target.files) handleImageFilesSelect(e.target.files);
+                        }}
+                      />
+                      <label htmlFor="image-upload-input" className="cursor-pointer space-y-2 block">
+                        <div className="w-12 h-12 rounded-2xl bg-cyan-100 dark:bg-cyan-950/80 text-cyan-600 mx-auto flex items-center justify-center">
+                          <UploadCloud className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white">
+                            Kéo thả nhiều ảnh vào đây hoặc <span className="text-cyan-600 underline">bấm để chọn file ảnh</span>
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                            Hỗ trợ tối đa 10 bức hình (PNG, JPG, WEBP, GIF). Tên file ảnh sẽ tự động được sử dụng làm từ/câu gợi ý!
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Staged Uploaded Images List */}
+                    {uploadedImages.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                            Ảnh đã tải lên ({uploadedImages.length}/10 bức hình):
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedImages([])}
+                            className="text-[11px] font-bold text-rose-500 hover:underline"
+                          >
+                            Xóa tất cả ảnh
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {uploadedImages.map((img) => (
+                            <div key={img.id} className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex items-center gap-3 relative group">
+                              <img
+                                src={img.previewUrl}
+                                alt={img.suggestedText}
+                                className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
+                              />
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="text-[9px] font-mono text-slate-400 truncate">{img.file.name}</div>
+                                <input
+                                  type="text"
+                                  value={img.suggestedText}
+                                  onChange={e => handleUpdateUploadedImageText(img.id, e.target.value)}
+                                  placeholder="Từ / Cần dịch (EN)"
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveUploadedImage(img.id)}
+                                className="p-1 text-slate-400 hover:text-rose-500 rounded-lg shrink-0"
+                                title="Gỡ ảnh này"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Process Images Button */}
+                        <button
+                          type="button"
+                          onClick={handleBatchProcessImages}
+                          disabled={isProcessingImages}
+                          className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-teal-600 text-white font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Sparkles className="w-4 h-4 text-amber-300" />
+                          <span>
+                            {isProcessingImages 
+                              ? 'Đang phân tích ảnh, tạo phiên âm & dịch tự động...' 
+                              : `⚡ Phân Tích ${uploadedImages.length} Ảnh, Tạo Phiên Âm & Dịch Tự Động`}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+              </div>
+
+              {/* STAGED ITEMS TABLE GRID LAYOUT: Từ/Câu | IPA | Nghĩa | Note | Hình ảnh */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>Danh Sách Từ / Câu Trong Bài ({stagedItems.length})</span>
+                  </h3>
+                  <button 
+                    type="button" 
+                    onClick={handleAddManualItem} 
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-black flex items-center gap-1 shadow-xs hover:bg-emerald-600 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm Ô Thủ Công</span>
+                  </button>
+                </div>
+
+                {/* Table Grid Structure */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="max-h-[460px] overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black uppercase text-[10px] tracking-wider sticky top-0 z-10">
+                        <tr>
+                          <th className="py-3 px-3 text-center w-10">#</th>
+                          <th className="py-3 px-3 min-w-[160px]">Từ / Câu (EN)</th>
+                          <th className="py-3 px-3 min-w-[120px]">Phiên Âm (IPA)</th>
+                          <th className="py-3 px-3 min-w-[160px]">Bản Dịch (VI)</th>
+                          <th className="py-3 px-3 min-w-[140px]">Ghi Chú (Note)</th>
+                          <th className="py-3 px-3 min-w-[160px]">Hình Ảnh (URL)</th>
+                          <th className="py-3 px-3 text-center w-12">Xoá</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-bold">
+                        {stagedItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-slate-400 text-xs font-medium">
+                              Chưa có từ / câu nào. Hãy dán đoạn văn phía trên hoặc nhấn "Thêm Ô Thủ Công"!
+                            </td>
+                          </tr>
+                        ) : (
+                          stagedItems.map((item, idx) => (
+                            <tr key={item.id || idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-950/80 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-400">{idx + 1}</td>
+                              <td className="py-2 px-2">
+                                <input
+                                  type="text"
+                                  value={item.text}
+                                  onChange={e => handleUpdateStagedItem(idx, 'text', e.target.value)}
+                                  placeholder="Tiếng Anh (star)"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </td>
+                              <td className="py-2 px-2">
+                                <input
+                                  type="text"
+                                  value={item.ipa || ''}
+                                  onChange={e => handleUpdateStagedItem(idx, 'ipa', e.target.value)}
+                                  placeholder="IPA (/stɑːr/)"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                              </td>
+                              <td className="py-2 px-2">
+                                <input
+                                  type="text"
+                                  value={item.vi || ''}
+                                  onChange={e => handleUpdateStagedItem(idx, 'vi', e.target.value)}
+                                  placeholder="Tiếng Việt (ngôi sao)"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </td>
+                              <td className="py-2 px-2">
+                                <input
+                                  type="text"
+                                  value={item.note || ''}
+                                  onChange={e => handleUpdateStagedItem(idx, 'note', e.target.value)}
+                                  placeholder="Ghi chú / Mẹo"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="py-2 px-2">
+                                <div className="flex items-center gap-1.5">
+                                  {item.imageUrl ? (
+                                    <img 
+                                      src={item.imageUrl} 
+                                      alt={item.text} 
+                                      className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-800 shrink-0" 
+                                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                                      <ImageIcon className="w-3.5 h-3.5" />
+                                    </div>
+                                  )}
+                                  <input
+                                    type="text"
+                                    value={item.imageUrl || ''}
+                                    onChange={e => handleUpdateStagedItem(idx, 'imageUrl', e.target.value)}
+                                    placeholder="URL ảnh (hoặc để trống)"
+                                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-[11px] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveStagedItem(idx)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
+                                  title="Xoá hàng"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Submit Button */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button 
+                  type="submit" 
+                  disabled={stagedItems.length === 0 || !listName.trim()} 
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" /> 
+                  <span>{editingListId ? 'Lưu Cập Nhật Bài Học' : 'Lưu Bài Học Vào SQLite DB'}</span>
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

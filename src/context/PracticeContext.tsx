@@ -31,6 +31,7 @@ interface PracticeContextType {
   setStrictMode: (s: boolean) => void;
   setUiLang: (lang: UiLanguage) => void;
   translateTextMyMemory: (text: string) => Promise<string>;
+  fetchIpa: (word: string) => Promise<string>;
   splitTextToPhrases: (text: string, type: PracticeItemType) => string[];
 }
 
@@ -287,6 +288,29 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  // Free Dictionary API IPA Lookup Engine
+  const fetchIpa = async (word: string): Promise<string> => {
+    if (!word.trim()) return '';
+    try {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.trim().toLowerCase())}`);
+      if (!res.ok) return '';
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        for (const entry of data) {
+          if (entry.phonetic) return entry.phonetic;
+          if (entry.phonetics && entry.phonetics.length > 0) {
+            for (const p of entry.phonetics) {
+              if (p.text) return p.text;
+            }
+          }
+        }
+      }
+    } catch {
+      return '';
+    }
+    return '';
+  };
+
   return (
     <PracticeContext.Provider value={{
       activeTab,
@@ -315,6 +339,7 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setStrictMode,
       setUiLang,
       translateTextMyMemory,
+      fetchIpa,
       splitTextToPhrases
     }}>
       {children}

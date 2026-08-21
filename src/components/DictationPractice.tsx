@@ -47,7 +47,7 @@ export const DictationPractice: React.FC = () => {
     if (showLeftSidebar && showRightSidebar) return 'lg:col-span-6';
     if (!showLeftSidebar && showRightSidebar) return 'lg:col-span-9';
     if (showLeftSidebar && !showRightSidebar) return 'lg:col-span-9';
-    return 'lg:col-span-12 w-full max-w-5xl mx-auto';
+    return 'lg:col-span-12';
   }, [showLeftSidebar, showRightSidebar]);
 
   // Find active list or fallback to SRS Review Pool mode

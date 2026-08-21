@@ -64,6 +64,8 @@ db.exec(`
     correctedText TEXT NOT NULL,
     correctedVi TEXT,
     studentNote TEXT,
+    studentName TEXT,
+    studentUid TEXT,
     timestamp INTEGER NOT NULL
   );
 
@@ -544,12 +546,17 @@ app.get('/api/reports', (req, res) => {
 });
 
 app.post('/api/reports', (req, res) => {
-  const { id, listId, listName, originalText, correctedText, correctedVi, studentNote, timestamp } = req.body;
+  const { id, listId, listName, originalText, correctedText, correctedVi, studentNote, studentName, studentUid, timestamp } = req.body;
+  
+  // Migration check for studentName & studentUid columns
+  try { db.exec(`ALTER TABLE student_reports ADD COLUMN studentName TEXT;`); } catch (e) {}
+  try { db.exec(`ALTER TABLE student_reports ADD COLUMN studentUid TEXT;`); } catch (e) {}
+
   const stmt = db.prepare(`
-    INSERT INTO student_reports (id, listId, listName, originalText, correctedText, correctedVi, studentNote, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO student_reports (id, listId, listName, originalText, correctedText, correctedVi, studentNote, studentName, studentUid, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(id || `rep-${Date.now()}`, listId, listName, originalText, correctedText, correctedVi || '', studentNote || '', timestamp || Date.now());
+  stmt.run(id || `rep-${Date.now()}`, listId, listName, originalText, correctedText, correctedVi || '', studentNote || '', studentName || '', studentUid || '', timestamp || Date.now());
   res.json({ success: true });
 });
 

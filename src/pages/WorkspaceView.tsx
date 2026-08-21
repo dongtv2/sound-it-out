@@ -32,7 +32,7 @@ import {
 
 export const WorkspaceView: React.FC = () => {
   const { activeTab, lists, setActiveListId, studentReports, deleteStudentReport, reviewItems, setActiveTab } = usePractice();
-  const { user } = useAuth();
+  const { user, familyUsers } = useAuth();
 
   // State to track if student is in expanded practice mode within Assigned tab
   const [practicingAssignedId, setPracticingAssignedId] = useState<string | null>(null);
@@ -48,6 +48,68 @@ export const WorkspaceView: React.FC = () => {
   // Calculate total items assigned
   const totalAssignedItems = assignedLists.reduce((sum, l) => sum + (l.items?.length || 0), 0);
   const activeAssignedList = lists.find(l => l.id === practicingAssignedId);
+
+  // DYNAMIC REAL LEADERBOARD DATA (Aggregated strictly from real studentReports & reviewItems)
+  const leaderboardData = React.useMemo(() => {
+    const usersMap: Record<string, { displayName: string; role: string; count: number; correctCount: number; srsMastered: number }> = {};
+
+    // 1. Add logged-in users from familyUsers
+    if (familyUsers && familyUsers.length > 0) {
+      familyUsers.forEach(u => {
+        usersMap[u.displayName.toLowerCase()] = {
+          displayName: u.displayName,
+          role: u.role === 'student' ? 'Học sinh' : u.role === 'teacher' ? 'Giáo viên' : 'Thành viên gia đình',
+          count: 0,
+          correctCount: 0,
+          srsMastered: 0
+        };
+      });
+    }
+
+    // Always include current logged-in user
+    if (user?.displayName && !usersMap[user.displayName.toLowerCase()]) {
+      usersMap[user.displayName.toLowerCase()] = {
+        displayName: user.displayName,
+        role: user.role === 'student' ? 'Học sinh' : 'Thành viên gia đình',
+        count: 0,
+        correctCount: 0,
+        srsMastered: 0
+      };
+    }
+
+    // 2. Aggregate real interaction metrics from studentReports
+    studentReports.forEach(r => {
+      const name = (r.studentName || user?.displayName || 'Bé Phúc Trí').trim();
+      const key = name.toLowerCase();
+      if (!usersMap[key]) {
+        usersMap[key] = {
+          displayName: name,
+          role: 'Học sinh',
+          count: 0,
+          correctCount: 0,
+          srsMastered: 0
+        };
+      }
+      usersMap[key].count += 1;
+      if (r.originalText.trim().toLowerCase() === r.correctedText.trim().toLowerCase()) {
+        usersMap[key].correctCount += 1;
+      }
+    });
+
+    // 3. Count mastered SRS review items for current active context
+    const currentNameKey = (user?.displayName || 'Bé Phúc Trí').toLowerCase();
+    if (usersMap[currentNameKey]) {
+      const masteredCount = reviewItems.filter(r => (r.repetitions || 0) >= 2).length;
+      usersMap[currentNameKey].srsMastered = masteredCount;
+    }
+
+    const list = Object.values(usersMap).sort((a, b) => {
+      if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
+      return b.count - a.count;
+    });
+
+    return list;
+  }, [studentReports, familyUsers, user, reviewItems]);
 
   // Diagnostic Weakness Analysis (Group reports by originalText to identify misspellings)
   const weakWordsMap = React.useMemo(() => {
@@ -355,90 +417,57 @@ export const WorkspaceView: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Top 1 */}
-                  <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-500/10 to-amber-500/5 border-2 border-amber-400/60 shadow-lg space-y-3 relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-400 text-slate-950 flex items-center gap-1 shadow-md">
-                        🥇 Hạng 1 (Xuất Sắc)
-                      </span>
-                      <Medal className="w-6 h-6 text-amber-500 fill-amber-400" />
+                  {leaderboardData.length === 0 ? (
+                    <div className="col-span-3 text-center py-8 bg-slate-50 dark:bg-slate-950 rounded-2xl text-slate-400 text-xs font-bold">
+                      Chưa có dữ liệu làm bài. Học sinh làm bài đầu tiên sẽ xuất hiện trên bảng xếp hạng!
                     </div>
+                  ) : (
+                    leaderboardData.map((st, idx) => {
+                      const isTop1 = idx === 0;
+                      const isTop2 = idx === 1;
+                      const isTop3 = idx === 2;
 
-                    <div className="space-y-1">
-                      <h3 className="font-black text-lg text-slate-900 dark:text-white">
-                        {user?.displayName || 'Bé Phúc Trí'}
-                      </h3>
-                      <div className="text-xs font-bold text-slate-500">Học sinh chuyên cần nhất</div>
-                    </div>
+                      return (
+                        <div
+                          key={st.displayName + idx}
+                          className={`p-5 rounded-3xl space-y-3 relative overflow-hidden ${
+                            isTop1
+                              ? 'bg-gradient-to-b from-amber-500/10 to-amber-500/5 border-2 border-amber-400/60 shadow-lg'
+                              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase flex items-center gap-1 shadow-xs ${
+                              isTop1 ? 'bg-amber-400 text-slate-950 shadow-md' :
+                              isTop2 ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' :
+                              'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            }`}>
+                              {isTop1 ? '🥇 Hạng 1 (Xuất Sắc)' : isTop2 ? '🥈 Hạng 2' : isTop3 ? '🥉 Hạng 3' : `Hạng ${idx + 1}`}
+                            </span>
+                            <Medal className={`w-5 h-5 ${isTop1 ? 'text-amber-500 fill-amber-400' : 'text-slate-400'}`} />
+                          </div>
 
-                    <div className="pt-2 border-t border-amber-200 dark:border-amber-900/40 grid grid-cols-2 gap-2 text-center">
-                      <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
-                        <div className="text-sm font-black text-amber-600 dark:text-amber-400">45 Từ</div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
-                        <div className="text-sm font-black text-amber-600 dark:text-amber-400">3 Ngày 🔥</div>
-                      </div>
-                    </div>
-                  </div>
+                          <div className="space-y-1">
+                            <h3 className="font-black text-lg text-slate-900 dark:text-white truncate">
+                              {st.displayName}
+                            </h3>
+                            <div className="text-xs font-bold text-slate-400">{st.role}</div>
+                          </div>
 
-                  {/* Top 2 */}
-                  <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        🥈 Hạng 2
-                      </span>
-                      <Medal className="w-5 h-5 text-slate-400" />
-                    </div>
-
-                    <div className="space-y-1">
-                      <h3 className="font-black text-base text-slate-900 dark:text-white">
-                        Cô Mai Anh
-                      </h3>
-                      <div className="text-xs font-bold text-slate-400">Giáo viên đồng hành</div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-center">
-                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
-                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">30 Từ</div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
-                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">2 Ngày 🔥</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Top 3 */}
-                  <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-md space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                        🥉 Hạng 3
-                      </span>
-                      <Medal className="w-5 h-5 text-amber-600" />
-                    </div>
-
-                    <div className="space-y-1">
-                      <h3 className="font-black text-base text-slate-900 dark:text-white">
-                        Thành Viên Gia Đình
-                      </h3>
-                      <div className="text-xs font-bold text-slate-400">Học viên chăm chỉ</div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-center">
-                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Đã Thuộc</div>
-                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">15 Từ</div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase">Chuỗi Học</div>
-                        <div className="text-sm font-black text-slate-700 dark:text-slate-300">1 Ngày 🔥</div>
-                      </div>
-                    </div>
-                  </div>
-
+                          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 grid grid-cols-2 gap-2 text-center">
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase">Đúng Chuẩn</div>
+                              <div className="text-sm font-black text-emerald-600 dark:text-emerald-400">{st.correctCount} Câu</div>
+                            </div>
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase">Lượt Làm</div>
+                              <div className="text-sm font-black text-amber-600 dark:text-amber-400">{st.count} Lần</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

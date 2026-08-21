@@ -38,7 +38,7 @@ export interface DictationPracticeProps {
 }
 
 export const DictationPractice: React.FC<DictationPracticeProps> = ({ onBackToDashboard }) => {
-  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings } = usePractice();
+  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings, addStudentReport } = usePractice();
   const { user } = useAuth();
 
   // Search & Filter State in Aside Left
@@ -172,6 +172,19 @@ export const DictationPractice: React.FC<DictationPracticeProps> = ({ onBackToDa
 
     setIsAnswered(true);
     setIsCorrect(correct);
+
+    // Save real student practice report to SQLite DB Backend
+    addStudentReport({
+      id: `rep-${Date.now()}-${Math.random()}`,
+      listId: isSrsMode ? 'srs-review-pool' : activeList?.id || 'general',
+      listName: isSrsMode ? '⭐ Ôn tập Kho SRS Tự Động' : activeList?.name || 'Bài Luyện',
+      originalText: target,
+      correctedText: input,
+      correctedVi: currentItem.vi || '',
+      studentName: user?.displayName || 'Bé Phúc Trí',
+      studentUid: user?.uid || 'student-1',
+      timestamp: Date.now()
+    });
 
     if (correct) {
       soundEffects.playCorrect();

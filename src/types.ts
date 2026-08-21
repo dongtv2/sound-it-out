@@ -70,6 +70,8 @@ export interface StudentReport {
   correctedText: string;
   correctedVi?: string;
   studentNote?: string;
+  studentName?: string;
+  studentUid?: string;
   timestamp: number;
 }
 

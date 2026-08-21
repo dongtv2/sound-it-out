@@ -145,13 +145,13 @@ export const DictationPractice: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 py-6">
-      {/* 3-COLUMN BALANCED LAYOUT */}
+    <div className="w-full px-4 lg:px-8 py-6">
+      {/* 3-COLUMN BALANCED FULLPAGE LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* ASIDE LEFT: Danh sách bài học & Tìm kiếm thông minh */}
-        <aside className="lg:col-span-3 space-y-4">
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <aside className="lg:col-span-3 space-y-4 sticky top-20">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col max-h-[calc(100vh-110px)]">
             
             {/* Header */}
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -233,7 +233,7 @@ export const DictationPractice: React.FC = () => {
             </div>
 
             {/* Scrollable Lesson List */}
-            <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
               {filteredLists.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
                   Không tìm thấy bài học phù hợp.
@@ -523,8 +523,8 @@ export const DictationPractice: React.FC = () => {
         </main>
 
         {/* ASIDE RIGHT: ⭐ Kho Từ Cần Ôn Tập SRS & Nút Ôn Tập Tự Động */}
-        <aside className="lg:col-span-3 space-y-4">
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <aside className="lg:col-span-3 space-y-4 sticky top-20">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col max-h-[calc(100vh-110px)]">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
@@ -562,7 +562,7 @@ export const DictationPractice: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
               {reviewItems.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-950/50 rounded-2xl p-4 border border-dashed border-slate-200 dark:border-slate-800">
                   Kho SRS đang trống. Chấm điểm bài tập để tự động lưu từ khó!

@@ -25,7 +25,9 @@ import {
   PanelLeft,
   PanelLeftClose,
   PanelRight,
-  PanelRightClose
+  PanelRightClose,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
@@ -193,16 +195,27 @@ export const DictationPractice: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col max-h-[calc(100vh-110px)]">
               
               {/* Header */}
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <ListMusic className="w-4 h-4 text-emerald-500" />
-                    <span>Danh Sách Bài Học</span>
-                  </span>
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <ListMusic className="w-4 h-4 text-emerald-500" />
+                  <span>Danh Sách Bài Học</span>
+                </h2>
+                <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
                     {filteredLists.length}/{lists.length}
                   </span>
-                </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEffects.playPop();
+                      setShowLeftSidebar(false);
+                    }}
+                    title="Ẩn danh sách bài học (Bên trái)"
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Smart Search Box */}
@@ -335,40 +348,32 @@ export const DictationPractice: React.FC = () => {
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
             <div className="flex items-center gap-2 min-w-0">
               
-              {/* TOGGLE ASIDE LEFT & RIGHT BUTTONS */}
-              <div className="flex items-center gap-1 border-r border-slate-200 dark:border-slate-800 pr-2.5 mr-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundEffects.playPop();
-                    setShowLeftSidebar(prev => !prev);
-                  }}
-                  title={showLeftSidebar ? "Ẩn danh sách bài học (Bên trái)" : "Hiện danh sách bài học (Bên trái)"}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    showLeftSidebar
-                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-emerald-100 hover:text-emerald-700'
-                      : 'bg-emerald-500 text-white shadow-xs'
-                  }`}
-                >
-                  {showLeftSidebar ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundEffects.playPop();
-                    setShowRightSidebar(prev => !prev);
-                  }}
-                  title={showRightSidebar ? "Ẩn kho từ SM-2 (Bên phải)" : "Hiện kho từ SM-2 (Bên phải)"}
-                  className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    showRightSidebar
-                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-amber-100 hover:text-amber-700'
-                      : 'bg-amber-500 text-white shadow-xs'
-                  }`}
-                >
-                  {showRightSidebar ? <PanelRightClose className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
-                </button>
-              </div>
+              {/* DUAL TOGGLE BOTH SIDEBARS BUTTON */}
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  const bothActive = showLeftSidebar && showRightSidebar;
+                  setShowLeftSidebar(!bothActive);
+                  setShowRightSidebar(!bothActive);
+                }}
+                title={
+                  showLeftSidebar || showRightSidebar
+                    ? "Chế độ tập trung (Ẩn cả 2 thanh bên)"
+                    : "Hiện cả 2 thanh bên"
+                }
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-r border-slate-200 dark:border-slate-800 pr-2 mr-1 shrink-0 ${
+                  !showLeftSidebar && !showRightSidebar
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {!showLeftSidebar && !showRightSidebar ? (
+                  <Maximize2 className="w-4 h-4 text-white" />
+                ) : (
+                  <Minimize2 className="w-4 h-4" />
+                )}
+              </button>
 
               <BookOpen className="w-4 h-4 text-emerald-500 shrink-0" />
               <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
@@ -660,14 +665,27 @@ export const DictationPractice: React.FC = () => {
         {showRightSidebar && (
           <aside className="lg:col-span-3 space-y-4 sticky top-20 animate-in fade-in slide-in-from-right duration-200">
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 flex flex-col max-h-[calc(100vh-110px)]">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
-                  <span>Kho Từ Ôn Tập SM-2</span>
-                </h2>
-                <p className="text-[11px] font-bold text-slate-400 mt-0.5">
-                  Tự động tổng hợp từ tất cả các bài học
-                </p>
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
+                    <span>Kho Từ Ôn Tập SM-2</span>
+                  </h2>
+                  <p className="text-[11px] font-bold text-slate-400 mt-0.5">
+                    Tự động tổng hợp từ tất cả các bài học
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEffects.playPop();
+                    setShowRightSidebar(false);
+                  }}
+                  title="Ẩn kho từ SM-2 (Bên phải)"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+                >
+                  <PanelRightClose className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Smart Auto-Queue Trigger Button */}

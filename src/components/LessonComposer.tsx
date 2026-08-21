@@ -164,7 +164,18 @@ export const LessonComposer: React.FC = () => {
   const handleUpdateStagedItem = (index: number, key: keyof PracticeItem, val: string) => {
     setStagedItems(prev => {
       const next = [...prev];
-      next[index] = { ...next[index], [key]: val };
+      const updatedItem = { ...next[index], [key]: val };
+
+      // Auto-extract IPA if user pastes or types "/.../" inside the VI translation input
+      if (key === 'vi' && val) {
+        const ipaMatch = val.match(/\s*\/([^\/]+)\/\s*/);
+        if (ipaMatch) {
+          updatedItem.ipa = `/${ipaMatch[1].trim()}/`;
+          updatedItem.vi = val.replace(/\s*\/([^\/]+)\/\s*/, ' ').trim();
+        }
+      }
+
+      next[index] = updatedItem;
       return next;
     });
   };

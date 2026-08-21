@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import type { CategoryTag, PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport } from '@/types';
+import type { CategoryTag, PracticeList, ReviewItem, Dialect, UiLanguage, PracticeItem, PracticeItemType, SrsGrade, StudentReport, SrsSettings } from '@/types';
 import { api } from '@/services/api';
 
 export type SoundItOutTab = 'practice' | 'composer' | 'assigned' | 'reports' | 'admin';
@@ -11,6 +11,8 @@ interface PracticeContextType {
   categories: CategoryTag[];
   reviewItems: ReviewItem[];
   studentReports: StudentReport[];
+  srsSettings: SrsSettings;
+  updateSrsSettings: (settings: Partial<SrsSettings>) => void;
   dialect: Dialect;
   strictMode: boolean;
   uiLang: UiLanguage;
@@ -35,6 +37,15 @@ interface PracticeContextType {
   splitTextToPhrases: (text: string, type: PracticeItemType) => string[];
 }
 
+const DEFAULT_SRS_SETTINGS: SrsSettings = {
+  dailyReviewLimit: 20,
+  autoCollectFailed: true,
+  autoPromptDue: true,
+  initialEaseFactor: 2.5,
+  intervalMultiplier: 1.0,
+  strictPriorityMode: true
+};
+
 const SETTINGS_STORAGE_KEY = 'sound-it-out-settings-v3';
 
 const PracticeContext = createContext<PracticeContextType | undefined>(undefined);
@@ -45,6 +56,24 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [dialect, setDialectState] = useState<Dialect>('both');
   const [strictMode, setStrictModeState] = useState<boolean>(false);
   const [uiLang, setUiLangState] = useState<UiLanguage>('vi');
+
+  const [srsSettings, setSrsSettingsState] = useState<SrsSettings>(() => {
+    try {
+      const saved = localStorage.getItem('sound-it-out-srs-settings-v1');
+      if (saved) return { ...DEFAULT_SRS_SETTINGS, ...JSON.parse(saved) };
+    } catch (e) {}
+    return DEFAULT_SRS_SETTINGS;
+  });
+
+  const updateSrsSettings = useCallback((newSettings: Partial<SrsSettings>) => {
+    setSrsSettingsState(prev => {
+      const next = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('sound-it-out-srs-settings-v1', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
 
   const [lists, setLists] = useState<PracticeList[]>([]);
   const [categories, setCategories] = useState<CategoryTag[]>([]);
@@ -319,6 +348,8 @@ export const PracticeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       categories,
       reviewItems,
       studentReports,
+      srsSettings,
+      updateSrsSettings,
       dialect,
       strictMode,
       uiLang,

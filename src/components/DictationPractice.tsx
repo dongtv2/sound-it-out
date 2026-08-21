@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 
 export const DictationPractice: React.FC = () => {
-  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems } = usePractice();
+  const { lists, categories, activeListId, setActiveListId, dialect, gradeItem, reviewItems, srsSettings } = usePractice();
   const { user } = useAuth();
 
   // Search & Filter State in Aside Left
@@ -43,8 +43,8 @@ export const DictationPractice: React.FC = () => {
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
 
-  // Dynamic grid column class based on visible sidebars
-  const mainColSpanClass = useMemo(() => {
+  // Dynamic Grid Span based on Active Sidebars
+  const mainSpanClass = useMemo(() => {
     if (showLeftSidebar && showRightSidebar) return 'lg:col-span-6';
     if (!showLeftSidebar && showRightSidebar) return 'lg:col-span-9';
     if (showLeftSidebar && !showRightSidebar) return 'lg:col-span-9';
@@ -55,8 +55,28 @@ export const DictationPractice: React.FC = () => {
   const isSrsMode = activeListId === 'srs-review-pool';
   const activeList = lists.find(l => l.id === activeListId) || lists[0];
 
+  // Priority-sorted review items for SRS Aside Right (urgent / lower repetitions on top)
+  const sortedReviewItems = useMemo(() => {
+    return [...reviewItems].sort((a, b) => {
+      const repA = a.repetitions || 0;
+      const repB = b.repetitions || 0;
+      if (repA !== repB) return repA - repB;
+      const dueA = a.dueDate || 0;
+      const dueB = b.dueDate || 0;
+      return dueA - dueB;
+    });
+  }, [reviewItems]);
+
+  const effectiveSrsReviewItems = useMemo(() => {
+    const list = sortedReviewItems;
+    if (srsSettings?.dailyReviewLimit && srsSettings.dailyReviewLimit < list.length) {
+      return list.slice(0, srsSettings.dailyReviewLimit);
+    }
+    return list;
+  }, [sortedReviewItems, srsSettings?.dailyReviewLimit]);
+
   const practiceItems: PracticeItem[] = isSrsMode 
-    ? reviewItems.map(r => ({ id: r.id, text: r.text, vi: r.vi }))
+    ? effectiveSrsReviewItems.map(r => ({ id: r.id, text: r.text, vi: r.vi }))
     : (activeList?.items || []);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -100,18 +120,6 @@ export const DictationPractice: React.FC = () => {
       return true;
     });
   }, [lists, searchQuery, filterCategory, user]);
-
-  // Priority-sorted review items for SRS Aside Right (urgent / lower repetitions on top)
-  const sortedReviewItems = useMemo(() => {
-    return [...reviewItems].sort((a, b) => {
-      const repA = a.repetitions || 0;
-      const repB = b.repetitions || 0;
-      if (repA !== repB) return repA - repB;
-      const dueA = a.dueDate || 0;
-      const dueB = b.dueDate || 0;
-      return dueA - dueB;
-    });
-  }, [reviewItems]);
 
   // Parent lesson info of current item (link to parent list)
   const itemParentList = useMemo(() => {
@@ -362,7 +370,7 @@ export const DictationPractice: React.FC = () => {
         )}
 
         {/* CENTER MAIN WORKSPACE */}
-        <main className={`transition-all duration-300 ${mainColSpanClass} space-y-3.5`}>
+        <main className={`transition-all duration-300 ${mainSpanClass} space-y-3.5`}>
           
           {/* Top Bar Stats */}
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
@@ -428,6 +436,39 @@ export const DictationPractice: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* SRS SMART DAILY REMINDER BANNER */}
+          {srsSettings?.autoPromptDue && sortedReviewItems.length > 0 && !isSrsMode && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-emerald-500/15 border border-amber-500/30 text-slate-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/30 shrink-0">
+                  <Sparkles className="w-5 h-5 fill-current animate-pulse" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5 flex-wrap">
+                    <span>🔔 Nhắc Nhở Lặp Lại Ngắt Quãng SM-2</span>
+                    <span className="px-2 py-0.2 rounded-full text-[9px] bg-rose-500 text-white font-mono">{sortedReviewItems.length} từ đến hạn</span>
+                  </div>
+                  <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                    Bạn có {sortedReviewItems.length} từ khó đến hạn lặp lại hôm nay để khắc sâu vào trí nhớ dài hạn.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundEffects.playPop();
+                  setActiveListId('srs-review-pool');
+                  setCurrentIndex(0);
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                <span>Ôn Ngay ({effectiveSrsReviewItems.length} từ)</span>
+              </button>
+            </div>
+          )}
 
           {/* Flashcard Practice Area */}
           {practiceItems.length === 0 ? (

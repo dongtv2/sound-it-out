@@ -72,3 +72,12 @@ export interface StudentReport {
   studentNote?: string;
   timestamp: number;
 }
+
+export interface SrsSettings {
+  dailyReviewLimit: number;
+  autoCollectFailed: boolean;
+  autoPromptDue: boolean;
+  initialEaseFactor: number;
+  intervalMultiplier: number;
+  strictPriorityMode: boolean;
+}

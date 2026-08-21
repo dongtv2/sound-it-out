@@ -24,9 +24,9 @@ import {
 
 export const AdminPortal: React.FC = () => {
   const { user, familyUsers, createUser, updateUser, deleteUser } = useAuth();
-  const { lists, deleteList, studentReports, deleteStudentReport, dialect, setDialect, strictMode, setStrictMode } = usePractice();
+  const { lists, deleteList, studentReports, deleteStudentReport, dialect, setDialect, strictMode, setStrictMode, srsSettings, updateSrsSettings, reviewItems, clearAllReview } = usePractice();
 
-  const [adminTab, setAdminTab] = useState<'users' | 'settings' | 'catalog' | 'reports'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'settings' | 'catalog' | 'reports' | 'srs'>('users');
 
   // New User Form State
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -153,6 +153,18 @@ export const AdminPortal: React.FC = () => {
           >
             <BarChart3 className="w-4 h-4" />
             <span>4. Báo Cáo Tiến Độ ({studentReports.length})</span>
+          </button>
+
+          <button
+            onClick={() => { soundEffects.playPop(); setAdminTab('srs'); }}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+              adminTab === 'srs'
+                ? 'bg-white text-purple-950 shadow-lg'
+                : 'bg-purple-950/50 text-purple-200 hover:bg-purple-900/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>5. Cấu Hình SRS SM-2 ({reviewItems.length})</span>
           </button>
         </div>
       </div>
@@ -405,6 +417,174 @@ export const AdminPortal: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 5: SRS SPACED REPETITION CONFIGURATION & MANAGEMENT */}
+      {adminTab === 'srs' && (
+        <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 flex-wrap gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <span>Cấu Hình Thuật Toán Spaced Repetition (SuperMemo-2 SM-2)</span>
+              </h2>
+              <p className="text-xs font-bold text-slate-400 mt-1">
+                Tối ưu hóa khả năng ghi nhớ dài hạn của học sinh bằng thuật toán lặp lại ngắt quãng khoa học.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                if (confirm('Bạn có chắc chắn muốn XÓA TOÀN BỘ KHO TỪ SRS để làm sạch tiến độ học tập?')) {
+                  soundEffects.playPop();
+                  clearAllReview();
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-black flex items-center gap-1.5 hover:bg-rose-100 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Xóa / Reset Kho SRS</span>
+            </button>
+          </div>
+
+          {/* SRS Pool Overview Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-1">
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Tổng Số Từ Trong Kho</span>
+              <div className="text-2xl font-black text-amber-900 dark:text-amber-100">{reviewItems.length} <span className="text-xs font-bold">từ</span></div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 space-y-1">
+              <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300">🔥 Level 1 (Cần Ôn Gấp)</span>
+              <div className="text-2xl font-black text-rose-900 dark:text-rose-100">
+                {reviewItems.filter(r => (r.repetitions || 0) <= 1).length} <span className="text-xs font-bold">từ</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-1">
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">⚡ Level 2 (Cần Củng Cố)</span>
+              <div className="text-2xl font-black text-amber-900 dark:text-amber-100">
+                {reviewItems.filter(r => (r.repetitions || 0) >= 2 && (r.repetitions || 0) <= 3).length} <span className="text-xs font-bold">từ</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 space-y-1">
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">✅ Level 3 (Đã Thuộc Tốt)</span>
+              <div className="text-2xl font-black text-emerald-900 dark:text-emerald-100">
+                {reviewItems.filter(r => (r.repetitions || 0) >= 4).length} <span className="text-xs font-bold">từ</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Settings Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            
+            {/* Setting 1: Daily Limit */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  Số Từ Ôn Tập Tối Đa / Ngày
+                </label>
+                <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-xs font-mono font-black">
+                  {srsSettings.dailyReviewLimit} từ
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Giới hạn số từ tối đa giao cho học sinh trong 1 phiên ôn tập để tránh quá tải não bộ.
+              </p>
+              <select
+                value={srsSettings.dailyReviewLimit}
+                onChange={e => updateSrsSettings({ dailyReviewLimit: parseInt(e.target.value) })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                <option value={10}>10 từ / ngày (Nhẹ nhàng)</option>
+                <option value={20}>20 từ / ngày (Khuyên dùng chuẩn)</option>
+                <option value={30}>30 từ / ngày (Cấp tốc)</option>
+                <option value={50}>50 từ / ngày (Chuyên sâu)</option>
+                <option value={999}>Không giới hạn (Ôn toàn bộ)</option>
+              </select>
+            </div>
+
+            {/* Setting 2: Initial Ease Factor */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  Hệ Số Ghi Nhớ Ban Đầu (Ease Factor)
+                </label>
+                <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-xs font-mono font-black">
+                  EF = {srsSettings.initialEaseFactor}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Hệ số lặp lại ngắt quãng SuperMemo-2. Giá trị càng cao, khoảng thời gian giãn cách giữa các lần lặp càng nhanh tăng.
+              </p>
+              <select
+                value={srsSettings.initialEaseFactor}
+                onChange={e => updateSrsSettings({ initialEaseFactor: parseFloat(e.target.value) })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                <option value={2.0}>2.0 (Lặp dày đặc - Học kỹ)</option>
+                <option value={2.5}>2.5 (Tiêu chuẩn SM-2 khuyên dùng)</option>
+                <option value={2.8}>2.8 (Lặp nhanh - Cho học sinh giỏi)</option>
+              </select>
+            </div>
+
+            {/* Setting 3: Auto-Collect Failed Items */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                  Tự Động Gom Từ Gõ Sai Vào Kho SRS
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                  Khi học sinh nhập sai trong các bài học chính, hệ thống tự động đưa từ đó vào Kho SRS để nhắc lặp lại.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={srsSettings.autoCollectFailed}
+                onChange={e => updateSrsSettings({ autoCollectFailed: e.target.checked })}
+                className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+              />
+            </div>
+
+            {/* Setting 4: Auto-Prompt Due Banner */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                  Tự Động Nhắc Nhở Ôn Bài Đầu Buổi Học
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                  Hiển thị banner gợi ý ôn các từ đến hạn ngay khi học sinh mở trang luyện tập.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={srsSettings.autoPromptDue}
+                onChange={e => updateSrsSettings({ autoPromptDue: e.target.checked })}
+                className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+              />
+            </div>
+
+            {/* Setting 5: Strict Priority Mode */}
+            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between gap-4 md:col-span-2">
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                  Chế Độ Ưu Tiên Từ Ôn Gấp (Strict Priority Mode)
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                  Tự động đẩy các từ Level 1 (🔥 Ôn gấp) lên đầu danh sách ôn tập trước khi chuyển sang các từ đã lặp nhiều lần.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={srsSettings.strictPriorityMode}
+                onChange={e => updateSrsSettings({ strictPriorityMode: e.target.checked })}
+                className="w-5 h-5 accent-emerald-500 rounded cursor-pointer shrink-0"
+              />
+            </div>
+
+          </div>
         </div>
       )}
 
